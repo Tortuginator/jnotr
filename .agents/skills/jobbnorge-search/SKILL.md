@@ -14,6 +14,15 @@ board used by universities, state directorates, hospitals and other
 public-sector employers. The CLI reads Jobbnorge's public JSON endpoints, so no
 token or login is needed.
 
+## Location filtering
+
+`--location area` and specific places are applied twice: the API's municipality
+filter is requested, then each result's own `location` is post-filtered against
+the resolved municipality and commute-area names (including places such as
+Hommelvik and Buvika). Rows with a generic location (`Flere`) are excluded from
+a filtered run and the count is reported in `meta.note`; use an unfiltered
+search and open the posting if you need to inspect them.
+
 ## Commands
 
 ```bash

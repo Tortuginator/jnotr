@@ -4,11 +4,15 @@ import {
   dedupeById,
   fetchCounties,
   jsonFetch,
+  loadAreaFile,
   loadEmployerIndex,
+  locationMatchesNames,
+  locationNamesForFilter,
   parseSearchResults,
   resolveLocation,
   stripInvisible,
   writeError,
+  type County,
   type LocationFilter,
   type RawJob,
 } from "../helpers.js"
@@ -96,11 +100,14 @@ function renderPlain(results: ReturnType<typeof parseSearchResults>): string {
 
 export async function runSearch(opts: SearchOpts): Promise<number> {
   let filter: LocationFilter = { municipalities: [], counties: [], label: "Norway" }
+  let counties: County[] = []
+  let locationFiltered = false
 
   try {
     if (opts.location) {
-      const counties = await fetchCounties()
+      counties = await fetchCounties()
       filter = resolveLocation(opts.location, counties)
+      locationFiltered = true
     }
   } catch (e) {
     if (e instanceof LocationError) {
@@ -124,15 +131,30 @@ export async function runSearch(opts: SearchOpts): Promise<number> {
 
     const employers = loadEmployerIndex()
     let results = parseSearchResults(dedupeById(raw), employers)
+
+    // The API's municipality/county filter is not reliable for every record
+    // (it has returned Bodø and generic "Flere" rows for Trondheim queries).
+    // Post-filter on the result's own location before applying --limit.
+    let locationNote: string | undefined
+    if (locationFiltered) {
+      const names = locationNamesForFilter(filter, counties, loadAreaFile())
+      const before = results.length
+      results = results.filter((result) => locationMatchesNames(result.location, names))
+      const dropped = before - results.length
+      if (dropped > 0) {
+        locationNote = `${dropped} result(s) excluded because their location did not match --location; generic "Flere" locations are excluded.`
+      }
+    }
     if (opts.limit !== undefined) results = results.slice(0, opts.limit)
 
     const { period, note } = periodForJobage(opts.jobage)
+    const combinedNote = [note, locationNote].filter(Boolean).join(" ")
     const output = stripInvisible({
       meta: {
         count: results.length,
         page: opts.page,
         ...(period ? { period } : {}),
-        ...(note ? { note } : {}),
+        ...(combinedNote ? { note: combinedNote } : {}),
       },
       results,
     })

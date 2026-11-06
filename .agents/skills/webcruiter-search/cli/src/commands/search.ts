@@ -127,18 +127,34 @@ function firstNonEmpty(values: string[]): string | null {
   return null
 }
 
+function uniqueNonEmpty(values: string[]): string[] {
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const value of values) {
+    const trimmed = value.replace(/\s+/g, " ").trim()
+    if (!trimmed) continue
+    const key = fold(trimmed)
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(trimmed)
+  }
+  return out
+}
+
 /** Normalise one advert from the companysearch response. */
 export function parseWebcruiterItem(item: WebcruiterAdvert, tenant: string, employerName: string): ParsedResult | null {
   const advertId = asString(item.Id).trim()
   if (!advertId) return null
 
-  const workplace = [item.Workplace, item.Workplace2, item.Workplace3, item.WorkPlaceFacet]
-    .map(asString)
+  const workplaceFields = [item.Workplace, item.Workplace2, item.Workplace3].map(asString)
+  const facetPlaces = [asString(item.WorkPlaceFacet)]
     .concat(asStringArray(item.WorkPlaceFacet3))
     .concat(asStringArray(item.WorkPlaceFacet2))
+  const workplace = workplaceFields.concat(facetPlaces)
 
   const title = firstNonEmpty([asString(item.Heading), asString(item.HeadingNotOverruled)]) ?? "(untitled)"
-  const location = firstNonEmpty(workplace)
+  const workPlaces = uniqueNonEmpty(workplaceFields)
+  const location = workPlaces.length ? workPlaces.join("; ") : firstNonEmpty(facetPlaces)
   const date = toIsoDate(asString(item.PublishedDate)) ?? toIsoDate(asString(item.PublishedIntranetDate))
 
   const url =

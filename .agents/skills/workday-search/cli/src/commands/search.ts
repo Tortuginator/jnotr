@@ -124,32 +124,54 @@ async function searchGroup(
     }
 
     let usedFacets = Object.keys(facetGroups).length > 0
-    const request = (facets: Record<string, string[]>) =>
+    const request = (facets: Record<string, string[]>, atOffset: number) =>
       fetchSearch(
         site,
         buildSearchBody({
           appliedFacets: facets,
           limit: pageSize,
-          offset,
+          offset: atOffset,
           searchText: opts.query ?? "",
         }),
       )
 
     let response: SearchResponse
     try {
-      response = await request(usedFacets ? facetGroups : {})
+      response = await request(usedFacets ? facetGroups : {}, offset)
     } catch (error) {
       // NorgesGruppen rejects `appliedFacets.locations` with HTTP 400 even though
       // it exposes the facet. Fall back to listing and matching `locationsText`.
       if (usedFacets && error instanceof HttpError && error.status === 400) {
         usedFacets = false
-        response = await request({})
+        response = await request({}, offset)
       } else {
         throw error
       }
     }
 
-    const postings = Array.isArray(response.jobPostings) ? response.jobPostings : []
+    // Workday accepts at most 20 postings per request. Page through the site
+    // until the requested --limit is covered (or the site is exhausted).
+    const target = opts.limit ?? pageSize
+    const postings = Array.isArray(response.jobPostings) ? [...response.jobPostings] : []
+    let nextOffset = offset + pageSize
+    let pages = 1
+    const maxPages = Math.min(20, Math.ceil(target / pageSize) + 1)
+    let pageResponse = response
+    while (postings.length < target && pages < maxPages) {
+      const pagePostings = Array.isArray(pageResponse.jobPostings) ? pageResponse.jobPostings : []
+      if (pagePostings.length < pageSize) break
+      if (typeof pageResponse.total === "number" && nextOffset >= pageResponse.total) break
+      try {
+        pageResponse = await request(usedFacets ? facetGroups : {}, nextOffset)
+        const items = Array.isArray(pageResponse.jobPostings) ? pageResponse.jobPostings : []
+        if (items.length === 0) break
+        postings.push(...items)
+        nextOffset += pageSize
+        pages++
+      } catch {
+        break
+      }
+    }
     const titleHits = opts.query
       ? postings.filter((posting) => matchesQueryText(posting.title ?? "", opts.query!)).length
       : 0
@@ -169,6 +191,7 @@ async function searchGroup(
 
     const results: SearchResult[] = []
     for (const posting of postings) {
+      if (results.length >= target) break
       if (!posting || typeof posting !== "object") continue
       const externalPath = typeof posting.externalPath === "string" ? posting.externalPath : ""
       if (!externalPath.startsWith("/job/")) continue

@@ -7,6 +7,8 @@ import {
   normalizeDate,
   parseCsv,
   parseJob,
+  locationMatchesNames,
+  locationNamesForFilter,
   parseJobDetail,
   resolveLocation,
   stripInvisible,
@@ -164,6 +166,30 @@ describe("location resolution", () => {
 
   test("rejects an unknown place instead of searching nationwide", () => {
     expect(() => resolveLocation("Atlantis", countyList)).toThrow(LocationError)
+  })
+})
+
+describe("location post-filter", () => {
+  const areaFile = {
+    municipalities: [
+      { code: "5001", name: "Trondheim", places: ["Heimdal", "Ranheim"] },
+      { code: "5029", name: "Skaun", places: ["Venn", "Buvika"] },
+    ],
+  }
+  const filter = { municipalities: [5001, 5031, 5028, 5029, 5035], counties: [], label: "area" }
+  const names = locationNamesForFilter(filter, countyList, areaFile)
+
+  test("accepts municipality and place names", () => {
+    expect(locationMatchesNames("Trondheim", names)).toBe(true)
+    expect(locationMatchesNames("Buvika, Skaun", names)).toBe(true)
+    expect(locationMatchesNames("Heimdal", names)).toBe(true)
+  })
+
+  test("rejects out-of-area and generic locations", () => {
+    expect(locationMatchesNames("Bodø", names)).toBe(false)
+    expect(locationMatchesNames("Vennesla", names)).toBe(false)
+    expect(locationMatchesNames("Flere", names)).toBe(false)
+    expect(locationMatchesNames(null, names)).toBe(false)
   })
 })
 

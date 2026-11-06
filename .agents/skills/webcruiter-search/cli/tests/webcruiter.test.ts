@@ -94,6 +94,20 @@ describe("Webcruiter field mapping", () => {
     expect(Object.keys(parsed.result).sort()).toEqual(["company", "date", "id", "location", "title", "url"])
   })
 
+  test("joins every workplace for multi-location postings", () => {
+    const advert = {
+      ...response.Data[0],
+      Workplace: "Oslo",
+      Workplace2: "Trondheim",
+      Workplace3: "",
+      WorkPlaceFacet: "Oslo",
+      WorkPlaceFacet3: ["Oslo", "Trondheim"],
+    }
+    const parsed = parseWebcruiterItem(advert, "7254", "TRONDHEIM KOMMUNE")!
+    expect(parsed.result.location).toBe("Oslo; Trondheim")
+    expect(parsed.locationText).toContain("Trondheim")
+  })
+
   test("company falls back to the advert when the registry name is empty", () => {
     const parsed = parseWebcruiterItem(response.Data[1], "7254", "")!
     expect(parsed.result.company).toBe("Trondheim kommune")
@@ -116,6 +130,13 @@ describe("location and query filters", () => {
     expect(locationMatches("Ranheim", "Trondheim", area)).toBe(true)
     expect(locationMatches("Ranheim", "Stjørdal", area)).toBe(false)
     expect(locationMatches("Stjørdal", "trondheim", area)).toBe(false)
+  })
+
+  test("does not match short place names inside longer words", () => {
+    expect(locationMatches("Vennesla", "area", area)).toBe(false)
+    expect(locationMatches("Vennesla", "Skaun", area)).toBe(false)
+    expect(locationMatches("kvalifisering", "area", area)).toBe(false)
+    expect(locationMatches("Ryen, Oslo", "Trondheim", area)).toBe(false)
   })
 
   test("diacritics fold for matching", () => {

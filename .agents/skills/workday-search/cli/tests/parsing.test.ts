@@ -82,7 +82,7 @@ describe("buildSearchBody", () => {
       offset: 20,
       searchText: "data",
     })
-    expect(buildSearchBody({ limit: 500 }).limit).toBe(100)
+    expect(buildSearchBody({ limit: 500 }).limit).toBe(20)
     expect(buildSearchBody({ limit: 0 }).limit).toBe(1)
     expect(buildSearchBody({ offset: -5 }).offset).toBe(0)
   })

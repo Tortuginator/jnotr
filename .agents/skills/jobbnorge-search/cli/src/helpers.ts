@@ -486,6 +486,79 @@ export function resolveLocation(input: string, counties: County[]): LocationFilt
   )
 }
 
+export interface AreaMunicipality {
+  code: string
+  name: string
+  aliases?: string[]
+  places?: string[]
+}
+
+export interface AreaFile {
+  municipalities: AreaMunicipality[]
+}
+
+/** Read job_scraper/area.json for the place names that are not municipality names. */
+export function loadAreaFile(repoRoot: string = REPO_ROOT): AreaFile | null {
+  const path = resolve(repoRoot, "job_scraper/area.json")
+  try {
+    if (!existsSync(path)) return null
+    const parsed = JSON.parse(readFileSync(path, "utf8")) as AreaFile
+    return Array.isArray(parsed?.municipalities) ? parsed : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Names that a result's `location` may legitimately use for a resolved filter.
+ * Includes municipality names, the selected county's municipalities, and the
+ * commute-area aliases/places so Hommelvik still matches Malvik.
+ */
+export function locationNamesForFilter(
+  filter: LocationFilter,
+  counties: County[],
+  area: AreaFile | null = loadAreaFile(),
+): string[] {
+  const names = new Set<string>()
+  for (const county of counties) {
+    if (filter.counties.includes(county.id)) {
+      names.add(foldPlace(county.name))
+      for (const municipality of county.municipality ?? []) names.add(foldPlace(municipality.name))
+    }
+    for (const municipality of county.municipality ?? []) {
+      if (filter.municipalities.includes(municipality.id)) names.add(foldPlace(municipality.name))
+    }
+  }
+  for (const municipality of area?.municipalities ?? []) {
+    if (!filter.municipalities.includes(Number(municipality.code))) continue
+    for (const name of [municipality.name, ...(municipality.aliases ?? []), ...(municipality.places ?? [])]) {
+      const folded = foldPlace(name)
+      if (folded) names.add(folded)
+    }
+  }
+  return [...names].filter(Boolean)
+}
+
+function placeTokens(value: string): string[] {
+  return foldPlace(value).split(" ").filter(Boolean)
+}
+
+/** Whole-token phrase match; prevents "Venn" matching "Vennesla". */
+export function locationMatchesNames(location: string | null, names: string[]): boolean {
+  if (!location) return false
+  const haystack = placeTokens(location)
+  if (haystack.length === 0) return false
+  for (const name of names) {
+    const wanted = placeTokens(name)
+    if (wanted.length === 0) continue
+    for (let i = 0; i + wanted.length <= haystack.length; i++) {
+      if (wanted.every((token, j) => haystack[i + j] === token)) return true
+    }
+  }
+  return false
+}
+
+
 let countyCache: County[] | null = null
 
 /** Fetch the county/municipality list once per process. */

@@ -13,7 +13,9 @@ import { dirname, join } from "node:path"
 
 export const UA = "Mozilla/5.0 (compatible; workday-search-cli/1.0)"
 export const DEFAULT_PAGE_SIZE = 20
-export const MAX_PAGE_SIZE = 100
+// Workday CXS returns HTTP 400 for page sizes above 20 on the tenants used
+// here. The CLI caps each request and pages until --limit is satisfied.
+export const MAX_PAGE_SIZE = 20
 
 export function writeError(error: string, code: string): void {
   process.stderr.write(JSON.stringify(stripInvisible({ error, code })) + "\n")

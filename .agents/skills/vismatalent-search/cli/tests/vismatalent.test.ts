@@ -189,6 +189,13 @@ describe("query, location and date filters", () => {
     expect(locationMatches("Trøndelag", "trondelag", area)).toBe(true)
   })
 
+  test("does not match short place names inside longer words", () => {
+    expect(locationMatches("Vennesla", "area", area)).toBe(false)
+    expect(locationMatches("Vennesla", "Skaun", area)).toBe(false)
+    expect(locationMatches("kvalifisering", "area", area)).toBe(false)
+    expect(locationMatches("Ryen, Oslo", "Trondheim", area)).toBe(false)
+  })
+
   test("jobage filters on PublishStartDate", async () => {
     const week = await collectResults({ page: 1, jobage: 7, format: "json", now }, makeDeps())
     expect(week.results.map((result) => result.title).sort()).toEqual([

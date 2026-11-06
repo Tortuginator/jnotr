@@ -355,9 +355,25 @@ function hasPostalPrefix(haystack: string, prefixes: string[]): boolean {
   return false
 }
 
+function foldTokens(value: string): string[] {
+  return fold(value).split(/[^a-z0-9]+/).filter(Boolean)
+}
+
+/** Whole-token phrase match, so "Venn" does not match "Vennesla" and
+ * "Kvål" does not match "kvalifisering". */
+function containsPlace(haystack: string, needle: string): boolean {
+  const wanted = foldTokens(needle)
+  if (wanted.length === 0) return false
+  const tokens = foldTokens(haystack)
+  for (let i = 0; i + wanted.length <= tokens.length; i++) {
+    if (wanted.every((token, j) => tokens[i + j] === token)) return true
+  }
+  return false
+}
+
 function municipalityMatches(haystack: string, m: AreaMunicipality): boolean {
   const names = [m.name, ...(m.aliases ?? []), ...(m.places ?? [])]
-  if (names.some((name) => name && haystack.includes(fold(name)))) return true
+  if (names.some((name) => name && containsPlace(haystack, name))) return true
   return hasPostalPrefix(haystack, m.postal_prefixes ?? [])
 }
 
@@ -372,7 +388,7 @@ export function locationMatches(locationText: string, filter: string | undefined
     return area.municipalities.some((m) => municipalityMatches(haystack, m))
   }
 
-  if (haystack.includes(wanted)) return true
+  if (containsPlace(haystack, wanted)) return true
   if (area) {
     const municipality = area.municipalities.find(
       (m) => fold(m.name) === wanted || (m.aliases ?? []).some((a) => fold(a) === wanted),

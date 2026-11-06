@@ -345,3 +345,28 @@ Manual seed values, aliases, NACE/website/career URLs and `enabled` were preserv
 - **Rema** works through `reachmee-search` with the validator URL above. The `rmpage=apply` discovery signature remains a useful fallback for future rows.
 - **Discover output changed:** Workday refs are now full career-site URLs (`https://host/site`), not `<tenant>/<site>`, so they can be consumed directly by `workday-search`.
 - **One-command rebuild** remains `python3 tools/employer_registry.py rebuild`, now with `--listings` and `--apply-hops` controls.
+
+## Location-filter audit (6 Nov 2026)
+
+Two independent audits ran every portal CLI with `-l area`, specific locations, no location, and nonsense locations. They found real defects; these are now fixed:
+
+- **Substring place matching** in `webcruiter-search`, `reachmee-search` and `vismatalent-search` let `Vennesla` match Skaun's `Venn`, `kvalifisering` match Melhus's `Kvål`, `Ryen` match Trondheim's `Rye`, and `Helle` match Stjørdal's `Hell`. Matching is now whole-token phrase matching; regression tests cover all four cases.
+- **Webcruiter displayed only the first workplace** for multi-location postings (`Oslo` even when the row also covered Trondheim). It now joins all `Workplace*` fields and de-duplicates them.
+- **Jobbnorge trusted the API municipality filter**, which returned Bodø and generic `Flere` rows for Trondheim queries. Search now post-filters the result's own `location` against the resolved municipality/area names and reports excluded rows in `meta.note`. Generic `Flere` rows are excluded from location-filtered runs.
+- **Workday returned HTTP 400 for `--limit` above 20**, producing zero results with per-employer errors. The CXS page size is now capped at 20 and the CLI pages until `--limit` is satisfied; `--limit 21/30/100` returns the same 11 area jobs with no errors.
+
+Re-verified live after the fixes:
+
+- `webcruiter -q Vennesla -l area` → 0; `webcruiter -q ingeniør -l area` → 5 rows, multi-location locations include Trondheim.
+- `jobbnorge -q utvikler -l area --limit 100` → only Trondheim; `-l Oslo` → only Oslo.
+- `workday -l area --limit 20/21/30/100` → 11 rows, no errors.
+- `reachmee -l area` → 7 Trondheim-area rows (Bouvet, Rema, Asplan Viak).
+- `vismatalent -l area` → 0, correct (all current Nortura ads are outside the area).
+
+Remaining caveats:
+
+- **NAV source data.** The feed's `municipal` is the registered municipality. A Dedicare staffing ad tagged `STJØRDAL`/postal `7500` advertises work on Vestlandet; the filter cannot detect that from the feed. Treat NAV area hits as candidates.
+- **ReachMee detail cap.** Area filtering resolves missing list locations from detail pages up to `--location-detail-limit` (default 30). If more than 30 rows lack a location, later area rows can be omitted; raise the flag for a deeper check.
+- **HR Manager null locations.** RSS rows with no extractable location are excluded from location-filtered runs; several Sparebank 1 rows currently have `location: null`.
+- **Jobbnorge generic locations.** `Flere` rows are excluded from filtered runs; a detail check would be needed to admit the subset that includes the area.
+- **NAV places fallback.** `nav-search` matches municipal names/aliases and postal prefixes; its `area.json` place list is not used for matching today, but all active cache records have `municipal`.
