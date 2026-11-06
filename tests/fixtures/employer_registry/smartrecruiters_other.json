@@ -1,0 +1,10 @@
+{
+  "totalFound": 1,
+  "content": [
+    {
+      "id": "2",
+      "name": "Selger",
+      "company": {"identifier": "unrelated", "name": "Unrelated Corp"}
+    }
+  ]
+}

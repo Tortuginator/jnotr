@@ -1,0 +1,37 @@
+{
+  "Total": 2,
+  "Data": [
+    {
+      "Id": "5198357738",
+      "TenantId": "7254",
+      "CompanyName": "Trondheim kommune",
+      "Heading": "Barnehagelærer",
+      "HeadingNotOverruled": "Presthus Gård og Vikåsen barnehager, Trondheim kommune",
+      "JobType": "Permanent position",
+      "JobCategory": "Medarbeider",
+      "Language": "nb",
+      "Presentation": "<p>Ved Presthus Gård og Vikåsen barnehager er det ledig en fast stilling.</p><script>ignoreMe()</script>",
+      "PublishedDate": "27/10/2026",
+      "ApplicationDeadline": "2026-11-09T22:59:59+00:00",
+      "Workplace": "Ranheim",
+      "Workplace2": "Ranheim",
+      "Workplace3": "Ranheim",
+      "WorkPlaceFacet": "Presthus Gård og Vikåsen barnehager",
+      "WorkPlaceFacet2": ["Presthus Gård Og Vikåsen Barnehager"],
+      "WorkPlaceFacet3": ["Presthus Gård og Vikåsen barnehager"],
+      "OpenAdvertUrl": "https://7254.webcruiter.no/Main/Recruit/Public/5198357738?language=en&link_source_id=0"
+    },
+    {
+      "Id": "5197874504",
+      "TenantId": "7254",
+      "CompanyName": "Trondheim kommune",
+      "Heading": "Helsefagarbeider",
+      "JobType": "Permanent position",
+      "JobCategory": "Medarbeider",
+      "Presentation": "Vil du ha en jobb hvor du kan bidra til bedre livskvalitet for andre?",
+      "PublishedDate": "29/10/2026",
+      "Workplace": "Byåsen",
+      "WorkPlaceFacet3": ["Byåsen bo- og aktivitetstilbud"]
+    }
+  ]
+}

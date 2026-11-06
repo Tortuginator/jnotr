@@ -76,6 +76,16 @@ ALLOWED_PERMISSIONS = {
     "Bash(bun run .agents/skills/jobnet-search/cli/src/cli.ts:*)",
     "Bash(bun run .agents/skills/linkedin-search/cli/src/cli.ts:*)",
     "Bash(bun run .agents/skills/freehire-search/cli/src/cli.ts:*)",
+    # Trondheim fork: Norwegian boards and employer-ATS connectors.
+    "Bash(bun run .agents/skills/nav-search/cli/src/cli.ts:*)",
+    "Bash(bun run .agents/skills/jobbnorge-search/cli/src/cli.ts:*)",
+    "Bash(bun run .agents/skills/teamtailor-search/cli/src/cli.ts:*)",
+    "Bash(bun run .agents/skills/webcruiter-search/cli/src/cli.ts:*)",
+    "Bash(bun run .agents/skills/reachmee-search/cli/src/cli.ts:*)",
+    "Bash(bun run .agents/skills/smartrecruiters-search/cli/src/cli.ts:*)",
+    "Bash(bun run .agents/skills/hrmanager-search/cli/src/cli.ts:*)",
+    "Bash(bun run .agents/skills/workday-search/cli/src/cli.ts:*)",
+    "Bash(bun run .agents/skills/vismatalent-search/cli/src/cli.ts:*)",
     "Bash(python salary_lookup.py:*)",
     "Bash(python3 salary_lookup.py:*)",
     "Bash(python tools/rank_state.py:*)",
@@ -101,6 +111,9 @@ ALLOWED_PERMISSIONS = {
     # Reads a file or stdin, writes only to an explicit --out, never fetches.
     "Bash(python tools/posting_guard.py:*)",
     "Bash(python3 tools/posting_guard.py:*)",
+    # Builds/refreshes job_scraper/employers.csv from the Brønnøysund register.
+    "Bash(python tools/employer_registry.py:*)",
+    "Bash(python3 tools/employer_registry.py:*)",
 }
 
 # Rules that must stay in .claude/settings.json permissions.ask. An ask rule

@@ -127,15 +127,19 @@ def classify_posting_host(url_str: str, installed_portals: set[str] | None = Non
     if not host:
         return "unverified", ""
 
+    # A known ATS apex wins over a locally installed ATS connector: adding
+    # `smartrecruiters-search` under .agents/skills/ must not demote
+    # smartrecruiters.com from the official-ATS tier. The ATS list is the
+    # stronger provenance claim, and every ATS connector host is still
+    # resolvable to its skill by resolve_portal_skill().
+    for apex in KNOWN_ATS_APEXES:
+        if host == apex or host.endswith(f".{apex}"):
+            return "official_ats", host
+
     # Check installed portal boards (exact match or subdomain match)
     for portal in installed_portals:
         if host == portal or host.endswith(f".{portal}"):
             return "installed_portal", host
-
-    # Check known official ATS apexes (exact match or subdomain match)
-    for apex in KNOWN_ATS_APEXES:
-        if host == apex or host.endswith(f".{apex}"):
-            return "official_ats", host
 
     return "unverified", host
 
@@ -263,13 +267,22 @@ class InstalledPortalsAreVerifiedTests(unittest.TestCase):
                     f"{skill.name}/cli/src has no host literal - the classifier cannot verify its postings",
                 )
 
-    def test_every_installed_portals_host_classifies_as_installed_portal(self):
+    def test_every_installed_portals_host_classifies_as_verified(self):
+        # A host shared with a known ATS apex is verified at the stronger
+        # official_ats tier (an ATS connector such as smartrecruiters-search
+        # lives under .agents/skills/ without making the ATS look like a board).
+        def expected_tier(host: str) -> str:
+            for apex in KNOWN_ATS_APEXES:
+                if host == apex or host.endswith(f".{apex}"):
+                    return "official_ats"
+            return "installed_portal"
+
         for skill in installed_portal_skills():
             for host in sorted(portal_hosts(skill)):
                 for url in (f"https://{host}/job/1", f"https://www.{host}/job/1", f"https://sub.{host}/job/1"):
                     with self.subTest(portal=skill.name, url=url, enabled=portal_enabled(skill)):
                         tier, _ = classify_posting_host(url)
-                        self.assertEqual(tier, "installed_portal", f"{url} classified as {tier}")
+                        self.assertEqual(tier, expected_tier(host), f"{url} classified as {tier}")
 
     def test_portal_hosts_are_registrable_names_without_www(self):
         for skill in installed_portal_skills():

@@ -29,6 +29,13 @@ salary_data.json
 **/job_scraper/seen_jobs.json.bak-*
 **/job_scraper/notion_sync.json
 **/job_scraper/*.md
+# Trondheim fork: employer registry, confirmed commute area, and NAV feed cache.
+# These are rebuilt from the committed seed/area defaults and API responses.
+**/job_scraper/employers.csv
+**/job_scraper/area.json
+**/job_scraper/nav_cache.jsonl
+**/job_scraper/nav_feed_state.json
+**/job_scraper/brreg_units.json
 *_BehavioralReport.pdf
 linkedin_Profile.pdf
 

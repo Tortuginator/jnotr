@@ -17,7 +17,7 @@ This repo is a job application workspace. Claude acts as a career advisor and ap
 
 ### Identity
 - **Name:** [YOUR_NAME]
-- **Location:** [YOUR_CITY], [YOUR_COUNTRY] ([YOUR_COMMUTE_CONSTRAINTS])
+- **Location:** Trondheim, Norway (commute area: Trondheim, Malvik, Melhus, Skaun, Stjørdal)
 - **Languages:**
   | Language | Level |
   |----------|-------|

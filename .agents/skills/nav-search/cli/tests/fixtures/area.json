@@ -1,0 +1,41 @@
+{
+  "name": "Test commute area",
+  "default": "Trondheim",
+  "municipalities": [
+    {
+      "code": "5001",
+      "name": "Trondheim",
+      "aliases": ["TRONDHEIM", "Trondheim kommune"],
+      "places": ["Heimdal"],
+      "postal_prefixes": ["70"]
+    },
+    {
+      "code": "5031",
+      "name": "Malvik",
+      "aliases": ["MALVIK"],
+      "places": ["Hommelvik"],
+      "postal_prefixes": ["75"]
+    },
+    {
+      "code": "5035",
+      "name": "Stjørdal",
+      "aliases": ["STJØRDAL", "STJORDAL"],
+      "places": ["Hell"],
+      "postal_prefixes": ["75"]
+    },
+    {
+      "code": "5028",
+      "name": "Melhus",
+      "aliases": ["MELHUS"],
+      "places": [],
+      "postal_prefixes": ["72"]
+    },
+    {
+      "code": "5029",
+      "name": "Skaun",
+      "aliases": ["SKAUN"],
+      "places": [],
+      "postal_prefixes": ["73"]
+    }
+  ]
+}

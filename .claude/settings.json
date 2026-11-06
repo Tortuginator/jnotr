@@ -8,6 +8,15 @@
       "Bash(bun run .agents/skills/jobnet-search/cli/src/cli.ts:*)",
       "Bash(bun run .agents/skills/linkedin-search/cli/src/cli.ts:*)",
       "Bash(bun run .agents/skills/freehire-search/cli/src/cli.ts:*)",
+      "Bash(bun run .agents/skills/nav-search/cli/src/cli.ts:*)",
+      "Bash(bun run .agents/skills/jobbnorge-search/cli/src/cli.ts:*)",
+      "Bash(bun run .agents/skills/teamtailor-search/cli/src/cli.ts:*)",
+      "Bash(bun run .agents/skills/webcruiter-search/cli/src/cli.ts:*)",
+      "Bash(bun run .agents/skills/reachmee-search/cli/src/cli.ts:*)",
+      "Bash(bun run .agents/skills/smartrecruiters-search/cli/src/cli.ts:*)",
+      "Bash(bun run .agents/skills/hrmanager-search/cli/src/cli.ts:*)",
+      "Bash(bun run .agents/skills/workday-search/cli/src/cli.ts:*)",
+      "Bash(bun run .agents/skills/vismatalent-search/cli/src/cli.ts:*)",
       "Bash(python salary_lookup.py:*)",
       "Bash(python3 salary_lookup.py:*)",
       "Bash(python tools/rank_state.py:*)",
@@ -25,7 +34,9 @@
       "Bash(python tools/fetch_page.py:*)",
       "Bash(python3 tools/fetch_page.py:*)",
       "Bash(python tools/posting_guard.py:*)",
-      "Bash(python3 tools/posting_guard.py:*)"
+      "Bash(python3 tools/posting_guard.py:*)",
+      "Bash(python tools/employer_registry.py:*)",
+      "Bash(python3 tools/employer_registry.py:*)"
     ],
     "ask": [
       "Edit(.claude/settings.json)",

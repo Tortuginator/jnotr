@@ -1,0 +1,84 @@
+{
+  "fetched_at": "2026-11-06T00:00:00Z",
+  "municipalities": ["5001"],
+  "min_staff": 50,
+  "size": 100,
+  "units": [
+    {
+      "orgnr": "9001",
+      "name": "ACME TRONDHEIM",
+      "staff": 60,
+      "nace": "62.010",
+      "parent_orgnr": "8001",
+      "parent_name": "ACME AS",
+      "parents": [{"orgnr": "8001", "name": "ACME AS"}],
+      "municipality": "5001",
+      "municipality_name": "TRONDHEIM",
+      "postnummer": "7010",
+      "poststed": "TRONDHEIM",
+      "website": ""
+    },
+    {
+      "orgnr": "9002",
+      "name": "ACME OSLO",
+      "staff": 40,
+      "nace": "62.010",
+      "parent_orgnr": "8001",
+      "parent_name": "ACME AS",
+      "parents": [{"orgnr": "8001", "name": "ACME AS"}],
+      "municipality": "5001",
+      "municipality_name": "TRONDHEIM",
+      "postnummer": "7011",
+      "poststed": "TRONDHEIM",
+      "website": ""
+    },
+    {
+      "orgnr": "9003",
+      "name": "MILJØDIREKTORATET TRONDHEIM",
+      "staff": 300,
+      "nace": "75.130",
+      "parent_orgnr": "8003",
+      "parent_name": "MILJØDIREKTORATET",
+      "parents": [
+        {"orgnr": "8003", "name": "MILJØDIREKTORATET"},
+        {"orgnr": "7003", "name": "KLIMA- OG MILJØDEPARTEMENTET"}
+      ],
+      "municipality": "5001",
+      "municipality_name": "TRONDHEIM",
+      "postnummer": "7012",
+      "poststed": "TRONDHEIM",
+      "website": ""
+    },
+    {
+      "orgnr": "9004",
+      "name": "ST. OLAVS HOSPITAL",
+      "staff": 250,
+      "nace": "86.101",
+      "parent_orgnr": "8004",
+      "parent_name": "ST. OLAVS HOSPITAL HF",
+      "parents": [
+        {"orgnr": "8004", "name": "ST. OLAVS HOSPITAL HF"},
+        {"orgnr": "7004", "name": "HELSE- OG OMSORGSDEPARTEMENTET"}
+      ],
+      "municipality": "5001",
+      "municipality_name": "TRONDHEIM",
+      "postnummer": "7013",
+      "poststed": "TRONDHEIM",
+      "website": ""
+    },
+    {
+      "orgnr": "9005",
+      "name": "SOLO KOMMUNE",
+      "staff": 500,
+      "nace": "84.110",
+      "parent_orgnr": "",
+      "parent_name": "",
+      "parents": [],
+      "municipality": "5001",
+      "municipality_name": "TRONDHEIM",
+      "postnummer": "7014",
+      "poststed": "TRONDHEIM",
+      "website": ""
+    }
+  ]
+}

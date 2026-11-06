@@ -1,0 +1,10 @@
+{
+  "totalFound": 1,
+  "content": [
+    {
+      "id": "1",
+      "name": "Utvikler",
+      "company": {"identifier": "acme", "name": "Acme AS"}
+    }
+  ]
+}

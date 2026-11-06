@@ -1,0 +1,33 @@
+{
+  "_embedded": {
+    "underenheter": [
+      {
+        "organisasjonsnummer": "900000001",
+        "navn": "ALPHA AS",
+        "antallAnsatte": 60,
+        "naeringskode1": {"kode": "62.010"},
+        "overordnetEnhet": "800000001",
+        "beliggenhetsadresse": {
+          "kommunenummer": "5031",
+          "kommune": "MALVIK",
+          "postnummer": "7550",
+          "poststed": "HOMMELVIK"
+        }
+      },
+      {
+        "organisasjonsnummer": "900000004",
+        "navn": "DELTA AS",
+        "antallAnsatte": 90,
+        "naeringskode1": {"kode": "41.200"},
+        "overordnetEnhet": "800000001",
+        "beliggenhetsadresse": {
+          "kommunenummer": "5031",
+          "kommune": "MALVIK",
+          "postnummer": "7550",
+          "poststed": "HOMMELVIK"
+        }
+      }
+    ]
+  },
+  "page": {"number": 0, "size": 2, "totalElements": 2, "totalPages": 1}
+}

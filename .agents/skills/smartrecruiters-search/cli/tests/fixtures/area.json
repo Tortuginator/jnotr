@@ -1,0 +1,27 @@
+{
+  "name": "Trondheim commute area",
+  "default": "Trondheim",
+  "municipalities": [
+    {
+      "code": "5001",
+      "name": "Trondheim",
+      "aliases": ["TRONDHEIM", "Trondheim kommune"],
+      "places": ["Heimdal", "Ranheim", "Tiller", "Lade"],
+      "postal_prefixes": ["70"]
+    },
+    {
+      "code": "5031",
+      "name": "Malvik",
+      "aliases": ["MALVIK"],
+      "places": ["Hommelvik", "Vikhammer"],
+      "postal_prefixes": ["75"]
+    },
+    {
+      "code": "5028",
+      "name": "Melhus",
+      "aliases": ["MELHUS"],
+      "places": ["Lundamo", "Gimse"],
+      "postal_prefixes": ["72"]
+    }
+  ]
+}

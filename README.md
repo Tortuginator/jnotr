@@ -289,6 +289,43 @@ For **country-agnostic** starting points outside Denmark, the repo ships two por
 - **`linkedin-search`** — built on LinkedIn's public, unauthenticated `jobs-guest` endpoints. Field-agnostic, **zero runtime dependencies** (runs with just `bun`), and takes the search location as an explicit flag, so it works for any market out of the box (`-l "Berlin, Germany"`, `-l "Mumbai, Maharashtra, India"`, `-l "Remote"`, …). Intended for **personal use only** — automated access is against LinkedIn's Terms of Service, so keep volume low. See `.agents/skills/linkedin-search/SKILL.md`.
 - **`freehire-search`** — queries the [freehire.me](https://freehire.me) aggregator's public REST API (JSON, no API key). Tech-focused (software, data, engineering, DevOps, remote), multi-market via facet flags (`--region`, `--country`, `--remote`), and **zero runtime dependencies**. Unlike the HTML-scraping Danish portals, results come back structured (skills, seniority, category). The backend is MIT-licensed and [self-hostable](https://github.com/strelov1/freehire) — point `FREEHIRE_API_URL` at your own instance if you prefer. See `.agents/skills/freehire-search/SKILL.md`.
 
+### Trondheim fork
+
+This fork targets the Trondheim commute area (Trondheim, Malvik, Melhus, Skaun, Stjørdal). It adds:
+
+- **Board skills:** `nav-search` (NAV Arbeidsplassen's job feed, cached locally by `sync`), `jobbnorge-search` (public Jobbnorge API), and the repo's `linkedin-search`.
+- **ATS skills:** `teamtailor-search`, `webcruiter-search`, `reachmee-search`, `smartrecruiters-search`, `hrmanager-search`, `workday-search`, `vismatalent-search`. Each reads the enabled employers in `job_scraper/employers.csv` and pools their public job lists, normalising `company` to the registry name so cross-source duplicates collapse in `scrape_state.py`.
+- **Employer registry:** `trondheim-patches/employers.seed.csv` is the committed seed (150 employers from the Brønnøysund register; 86 with a recognised system, plus Bravida's career-site-only row). `tools/employer_registry.py` rebuilds it with `fetch`, `rollup`, `discover`, `probe`, or one-command `rebuild`; `discover` follows listings and apply links and recognises Workday, Visma Talent, Avature, Done.ai and CareerHub. `job_scraper/employers.csv` and `job_scraper/area.json` are user data and git-ignored.
+- **Detected but not connected:** Siemens Energy (Avature), Prima Assistanse (Done.ai) and SJ Norge (CareerHub) have `status=no_connector`; they are visible in the registry but need a future skill. Bravida is `career_site_only` and covered through NAV/boards.
+- **Area filter:** every area-aware CLI accepts `-l area`, which reads `job_scraper/area.json`.
+
+Set the NAV token before scraping:
+
+```bash
+export NAV_API_TOKEN="<private token from nav.team.arbeidsplassen@nav.no>"
+```
+
+NAV publishes a rotating experimental token at `https://pam-stilling-feed.nav.no/api/publicToken` for testing; request a private token for regular use.
+
+Weekly routine:
+
+```bash
+bun run .agents/skills/nav-search/cli/src/cli.ts sync --since 30 --details-limit 25
+/scrape
+```
+
+Rebuild the employer registry quarterly (or when an employer changes ATS) with one command. It runs `fetch -> rollup -> discover -> probe`, keeps every curated seed row (and its ATS connector) even when a fresh Brønnøysund snapshot ranks a different set of 150, and writes `job_scraper/employers.csv`:
+
+```bash
+python3 tools/employer_registry.py rebuild
+```
+
+Individual steps remain available for debugging: `fetch`, `rollup --preserve-seed`, `discover`, `probe`.
+
+FINN.no is deliberately **not** scraped: its robots.txt prohibits automated crawling without written permission. Use FINN saved-search email alerts instead.
+
+> Terms note: Webcruiter and SmartRecruiters serve public data but their robots.txt restricts generic automated agents. Those skills carry personal-use-only warnings; keep volume low and review the terms before enabling them for regular runs.
+
 ### Extending the framework: portals, templates, criteria - and borrowing from other forks
 
 Everything above adds up to an extension model, so here it is stated plainly. The framework has three extension points, and none of them require touching upstream:

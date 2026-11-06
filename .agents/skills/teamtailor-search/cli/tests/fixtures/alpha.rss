@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:tt="https://teamtailor.com/locations">
+  <channel>
+    <title>Alpha</title>
+    <link>https://alpha.teamtailor.com/jobs</link>
+    <item>
+      <title>Senior Engineer</title>
+      <description>&lt;p&gt;Build &lt;strong&gt;great&lt;/strong&gt; things.&lt;/p&gt;</description>
+      <pubDate>Wed, 04 Nov 2026 07:42:37 +0100</pubDate>
+      <link>https://alpha.teamtailor.com/jobs/1001-senior-engineer</link>
+      <guid>11111111-1111-4111-8111-111111111111</guid>
+      <remoteStatus>none</remoteStatus>
+      <tt:locations>
+        <tt:location>
+          <tt:name>Trondheim</tt:name>
+          <tt:address>Kongens gate 1</tt:address>
+          <tt:zip>7011</tt:zip>
+          <tt:city>Trondheim</tt:city>
+          <tt:country>Norway</tt:country>
+        </tt:location>
+      </tt:locations>
+      <tt:department>Engineering</tt:department>
+      <tt:role>Engineering</tt:role>
+    </item>
+    <item>
+      <title>Prosjektleder</title>
+      <description>&lt;p&gt;Vi søker en prosjektleder med erfaring fra bygg.&lt;/p&gt;</description>
+      <pubDate>Wed, 28 Oct 2026 13:20:52 +0100</pubDate>
+      <link>https://alpha.teamtailor.com/jobs/1002-prosjektleder</link>
+      <guid>22222222-2222-4222-8222-222222222222</guid>
+      <remoteStatus>none</remoteStatus>
+      <tt:locations>
+        <tt:location>
+          <tt:name>Trondheim</tt:name>
+          <tt:zip>7012</tt:zip>
+          <tt:city>Trondheim</tt:city>
+          <tt:country>Norway</tt:country>
+        </tt:location>
+      </tt:locations>
+    </item>
+    <item>
+      <title>Oslo Office Manager</title>
+      <description>&lt;p&gt;Run our Oslo office.&lt;/p&gt;</description>
+      <pubDate>Tue, 03 Nov 2026 09:00:00 +0100</pubDate>
+      <link>https://alpha.teamtailor.com/jobs/1003-oslo-office-manager</link>
+      <guid>33333333-3333-4333-8333-333333333333</guid>
+      <remoteStatus>none</remoteStatus>
+      <tt:locations>
+        <tt:location>
+          <tt:name>Oslo</tt:name>
+          <tt:zip>0150</tt:zip>
+          <tt:city>Oslo</tt:city>
+          <tt:country>Norway</tt:country>
+        </tt:location>
+      </tt:locations>
+    </item>
+    <item>
+      <title>Heimdal Technician</title>
+      <description>&lt;p&gt;Service equipment in Heimdal.&lt;/p&gt;</description>
+      <pubDate>Mon, 02 Nov 2026 11:30:00 +0100</pubDate>
+      <link>https://alpha.teamtailor.com/jobs/1004-heimdal-technician</link>
+      <guid>44444444-4444-4444-8444-444444444444</guid>
+      <remoteStatus>none</remoteStatus>
+      <tt:locations>
+        <tt:location>
+          <tt:name>Trondheim</tt:name>
+          <tt:address>Vestre Rosten 69</tt:address>
+          <tt:zip>7072</tt:zip>
+          <tt:city>Heimdal</tt:city>
+          <tt:country>Norway</tt:country>
+        </tt:location>
+      </tt:locations>
+    </item>
+    <item>
+      <title>Data Engineer</title>
+      <description>&lt;p&gt;Cloud platform work.&lt;/p&gt;&lt;script&gt;hiddenkeyword&lt;/script&gt;</description>
+      <pubDate>Thu, 05 Nov 2026 08:15:00 +0100</pubDate>
+      <link>https://alpha.teamtailor.com/jobs/1005-data-engineer</link>
+      <guid>55555555-5555-4555-8555-555555555555</guid>
+      <remoteStatus>none</remoteStatus>
+      <tt:locations>
+        <tt:location>
+          <tt:name>Trondheim</tt:name>
+          <tt:zip>7030</tt:zip>
+          <tt:city>Trondheim</tt:city>
+          <tt:country>Norway</tt:country>
+        </tt:location>
+        <tt:location>
+          <tt:name>Oslo</tt:name>
+          <tt:zip>0150</tt:zip>
+          <tt:city>Oslo</tt:city>
+          <tt:country>Norway</tt:country>
+        </tt:location>
+      </tt:locations>
+    </item>
+    <item>
+      <title>Fully Remote Engineer</title>
+      <description>&lt;p&gt;Work from anywhere.&lt;/p&gt;</description>
+      <pubDate>Sun, 01 Nov 2026 10:00:00 +0100</pubDate>
+      <link>https://alpha.teamtailor.com/jobs/1006-fully-remote-engineer</link>
+      <guid>66666666-6666-4666-8666-666666666666</guid>
+      <remoteStatus>fully-remote</remoteStatus>
+      <tt:locations></tt:locations>
+    </item>
+  </channel>
+</rss>

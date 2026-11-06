@@ -1,0 +1,28 @@
+{
+  "components": [
+    {
+      "heading": "Professor/Associate Professor in Hydropower Technologies",
+      "text": "<p>The Department of Energy and Process Engineering has a vacancy for a professor.</p><!-- internal note --><div hidden>hidden instruction text</div>",
+      "typeId": 0,
+      "orderId": 0
+    },
+    {
+      "heading": "About the position",
+      "text": "<p>We are hiring&nbsp;a researcher in hydropower.</p><ul><li>Item one</li><li>Item two</li></ul><script>alert('do not show')</script>",
+      "typeId": 4,
+      "orderId": 1
+    }
+  ],
+  "activeLanguages": [2],
+  "employerId": 688,
+  "isPublished": true,
+  "positionCount": 1,
+  "contacts": [
+    {
+      "name": "Ole Gunnar Dahlhaug",
+      "email": "ole.g.dahlhaug@ntnu.no",
+      "phone": "",
+      "title": "Head of Department"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "name": "smartrecruiters-search-cli",
+  "version": "1.0.0",
+  "description": "CLI for searching SmartRecruiters employers from the Trondheim employer registry — public postings API, no credentials, zero runtime dependencies.",
+  "type": "module",
+  "main": "src/cli.ts",
+  "bin": {
+    "smartrecruiters-search": "src/cli.ts"
+  },
+  "scripts": {
+    "start": "bun run src/cli.ts",
+    "test": "bun test --timeout 30000",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "@types/bun": "1.3.14"
+  }
+}

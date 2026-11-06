@@ -1,0 +1,20 @@
+{
+  "jobPostingInfo": {
+    "id": "dce170ea45a4100212dc531ba3fe0000",
+    "title": "Network Security Engineer",
+    "jobDescription": "<p>Shape the future of secure connectivity in the largest insurance company in the Nordics.</p>",
+    "location": "Nordic",
+    "additionalLocations": ["Turku", "Espoo", "København"],
+    "postedOn": "Posted Today",
+    "startDate": "2026-11-06",
+    "endDate": "2026-11-21",
+    "timeType": "Full time",
+    "jobReqId": "JobReqID11688",
+    "externalUrl": "https://if.wd502.myworkdayjobs.com/Careers/job/Nordic/Network-Security-Engineer_JobReqID11688",
+    "country": { "descriptor": "Sweden", "id": "sweden-id" },
+    "jobRequisitionLocation": {
+      "descriptor": "Alta",
+      "country": { "descriptor": "Norway", "id": "norway-id", "alpha2Code": "NO" }
+    }
+  }
+}

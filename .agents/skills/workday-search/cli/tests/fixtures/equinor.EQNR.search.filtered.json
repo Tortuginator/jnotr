@@ -1,0 +1,28 @@
+{
+  "total": 1,
+  "jobPostings": [
+    {
+      "title": "Data Scientist - Agentic AI",
+      "externalPath": "/job/Sandsli-Norway/Data-Scientist---Agentic-AI_JR107962",
+      "timeType": "Full time",
+      "locationsText": "2 Locations",
+      "postedOn": "Posted 2 Days Ago",
+      "bulletFields": ["JR107962"]
+    }
+  ],
+  "facets": [
+    {
+      "facetParameter": "locationMainGroup",
+      "values": [
+        {
+          "facetParameter": "locations",
+          "descriptor": "Locations",
+          "values": [
+            { "descriptor": "Rotvoll, Norway", "id": "rotvoll-id", "count": 1 }
+          ]
+        }
+      ]
+    }
+  ],
+  "userAuthenticated": false
+}

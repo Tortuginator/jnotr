@@ -1,0 +1,28 @@
+{
+  "total": 1,
+  "jobPostings": [
+    {
+      "title": "Sommerjobb 2027 – Dam og vassdrag",
+      "externalPath": "/job/Trondheim/Sommerjobb-2027---Dam-og-vassdrag_REQ-6486",
+      "timeType": "Full time",
+      "locationsText": "Trondheim",
+      "postedOn": "Posted 14 Days Ago",
+      "bulletFields": ["REQ-6486"]
+    }
+  ],
+  "facets": [
+    {
+      "facetParameter": "locationMainGroup",
+      "values": [
+        {
+          "facetParameter": "locations",
+          "descriptor": "Locations",
+          "values": [
+            { "descriptor": "Trondheim", "id": "trondheim-id", "count": 1 }
+          ]
+        }
+      ]
+    }
+  ],
+  "userAuthenticated": false
+}

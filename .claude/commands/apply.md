@@ -56,8 +56,7 @@ If the posting specifies a city, add `--city "<City>"` to narrow results. Parse 
 
 Before proceeding to drafting, inspect the posting URL's hostname to verify provenance (#431). Classify the host into one of three categories:
 
-1. **Installed portal board:** the host matches any configured job portal in `.agents/skills/` (e.g. `jobindex.dk`, `linkedin.com`, `jobnet.dk`, `jobbank.dk`, `jobdanmark.dk`, `freehire.me`, or any portal added by `/add-portal`).
-2. **Known official ATS apex:** the host matches or is a valid subdomain of one of the six standard ATS domains:
+1. **Known official ATS apex:** the host matches or is a valid subdomain of one of the six standard ATS domains. Check this **before** the installed-portal set: an ATS connector under `.agents/skills/` (e.g. `smartrecruiters-search`) does not demote its own ATS apex from the official tier.
    - `greenhouse.io`
    - `lever.co`
    - `myworkdayjobs.com` (or `workday.com`)
@@ -65,6 +64,7 @@ Before proceeding to drafting, inspect the posting URL's hostname to verify prov
    - `smartrecruiters.com`
    - `workable.com`
    *Look-alike parsing:* the host must match the apex exactly or end with `.<apex>`. Look-alike prefix tricks (e.g. `evil-greenhouse.io`), suffix spoofing (e.g. `job-boards.greenhouse.io.evil.com`), userinfo tricks (`https://greenhouse.io@evil.com/`), and unfamiliar subdomains fail closed and must not be classified as an official ATS.
+2. **Installed portal board:** the host matches any configured job portal in `.agents/skills/` (e.g. `jobindex.dk`, `linkedin.com`, `jobnet.dk`, `jobbank.dk`, `jobdanmark.dk`, `freehire.me`, or any portal added by `/add-portal`). This tier is checked after the ATS apexes.
 3. **Neither (Unverified host):** name the host plainly in the evaluation output as unverified (`⚠ Unverified source host: <hostname> - not an installed portal board or known ATS apex`). Alert the user to verify the employer and link legitimacy before committing time and tokens to drafting.
 
 Present the evaluation to the user with:

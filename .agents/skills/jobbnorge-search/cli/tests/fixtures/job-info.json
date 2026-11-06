@@ -1,0 +1,24 @@
+{
+  "id": 310059,
+  "employerName": "NTNU - Norges teknisk-naturvitenskapelige universitet",
+  "deadlineOn": "$date('2026-12-04 00:00:00')",
+  "jobScope": "Heltid",
+  "jobAdvertisementScopeId": "1",
+  "jobDuration": "Fast",
+  "workPlace": [
+    {
+      "adress": "Kolbj\u00f8rn Hejes v 1B ",
+      "area": "Trondheim",
+      "zip": "7034",
+      "municipality": "Trondheim"
+    }
+  ],
+  "contacts": [
+    {
+      "name": "Ole Gunnar Dahlhaug",
+      "email": "ole.g.dahlhaug@ntnu.no",
+      "phone": "",
+      "title": "Head of Department"
+    }
+  ]
+}

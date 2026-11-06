@@ -1,90 +1,128 @@
-# Search Queries for Job Scraper
+# Search Queries for Job Scraper — Trondheim
 
-<!-- SETUP: Customize these queries based on your skills, target roles, and location -->
+<!-- Trondheim fork: commute-area job search in Norway. -->
 
 ## Installed portal CLIs (primary for `/scrape`)
 
-`/scrape` discovers every portal skill under `.agents/skills/*/SKILL.md` and runs its CLI first. Shipped country-agnostic CLIs include `linkedin-search` and `freehire-search`; Danish demos and any skill you add with `/add-portal` are included the same way. You do **not** need a matching `site:` line below for those CLIs to run.
+`/scrape` discovers every portal skill under `.agents/skills/*/SKILL.md` and runs its CLI first. This fork adds:
 
-The `site:` query templates in this file are the **WebSearch fallback** — for portals without a CLI, company career pages, or when a CLI fails.
+| Skill | Covers | Location handling |
+| --- | --- | --- |
+| `nav-search` | NAV Arbeidsplassen (all public Norwegian ads except FINN) | `-l area` filters the cached feed by municipality/postal code |
+| `jobbnorge-search` | Jobbnorge (academia, state, hospitals) | `-l area` queries the five commute municipalities |
+| `teamtailor-search` | Teamtailor career sites in the employer registry | `-l area` filters `tt:location` |
+| `webcruiter-search` | Webcruiter employers (Trondheim kommune, St. Olavs, Trøndelag fylkeskommune, …) | `-l area` filters workplaces |
+| `reachmee-search` | ReachMee/Attract employers (Sweco, Asplan Viak, ScaleAQ, …) | `-l area` filters posting locations |
+| `smartrecruiters-search` | SmartRecruiters employers (Sopra Steria, Ramboll, Sportradar, …) | `-l area` filters posting locations |
+| `hrmanager-search` | HR Manager/Talentech employers (Sparebank 1 SMN, MiST, …) | `-l area` filters posting locations |
+| `workday-search` | Workday employers (Equinor, Norconsult, ASKO, NG Meny, If) | `-l area` uses Workday location facets and multi-location details |
+| `vismatalent-search` | Visma Talent employers (Nortura, plus Webcruiter migrations) | `-l area` filters municipality/county |
+| `linkedin-search` | LinkedIn, worldwide | pass `-l "Trondheim, Norway"` |
+| `freehire-search` | freehire.me tech aggregator | pass `--country NO --city Trondheim` (facet flags, not `-l`) |
 
-**Language scope:** write every query category in every language listed in your CLAUDE.md Languages table (typically 1-2, sometimes more). A posting requiring a language you have *not* declared, as a job condition, is excluded before scoring; a posting requiring a *higher level* than you declared in a language you *do* work in is flagged for your own judgment, not excluded — see `04-job-evaluation.md`'s Language Gate, the single source of truth for this rule. Translate each category's keywords rather than machine-translating word-for-word (e.g. "Frontend Developer" -> "Desarrollador Frontend", not a literal word-for-word translation) if you work in more than one language.
+The four Danish demo portals (`jobbank`, `jobdanmark`, `jobindex`, `jobnet`) ship `enabled: false`; `/scrape` skips them.
 
-## Search Sites
+`nav-search` keeps a local cache. Its `search` command performs one incremental `sync` when the cache is older than 30 minutes, so `/scrape` needs no separate pre-step. If you want to refresh explicitly:
 
-Primary (your market's job boards - scaffold one with `/add-portal`):
-- **[YOUR_JOB_BOARD]** - your market's largest general job board
-- **linkedin.com/jobs** - LinkedIn job listings (filter: [YOUR_COUNTRY] / [YOUR_CITY]); also covered by `linkedin-search` CLI
-- **[YOUR_INDUSTRY_JOB_BOARD]** - a niche/industry board for your field (optional)
-- **[YOUR_ADDITIONAL_JOB_BOARD]** - another major board for your market (optional)
+```bash
+bun run .agents/skills/nav-search/cli/src/cli.ts sync --since 30 --max-pages 20
+```
 
-Secondary (company career pages via Google):
-- Direct Google searches with `site:` filters for known target companies
+**Run every CLI with `--format json` and `--limit 20` for `/scrape`.** The CLIs reject unknown flags.
+
+## Location
+
+The commute area is defined in `job_scraper/area.json` (rebuildable; git-ignored) and defaults to:
+
+- Trondheim (5001) — including Heimdal, Ranheim, Tiller, Byåsen, Lerkendal, Moholt, Gløshaugen, Brattøra, Lade, Strinda
+- Malvik (5031) — Hommelvik, Vikhammer, Muruvik, Saksvik
+- Melhus (5028) — Lundamo, Kvål, Gimse, Hovin, Korsvegen
+- Skaun (5029) — Børsa, Buvika, Eggkleiva, Venn
+- Stjørdal (5035) — Hell, Hegra, Skatval
+
+**Too far:** Oslo, Bergen, Stavanger, Tromsø, Bodø, Ålesund, and anything outside Trøndelag unless the posting is explicitly remote.
+
+For every area-aware CLI use `--location area`, not a hard-coded city. Use `-l Trondheim` only when you deliberately want to exclude the surrounding municipalities. For `linkedin-search` use `-l "Trondheim, Norway"`.
 
 ## Query Categories
 
-Queries are grouped by priority. Write **each category in every language from your Languages table** (see Language scope above). Combine each query with your location terms (e.g. your city, region, or metro area) where the site supports it.
+Run the top 3 priority categories by default; `/scrape broad` runs all. Write each category in Norwegian and English because the boards mix languages.
 
-**Organize by function, not job title.** The same underlying work carries different titles across companies and markets (a "Data Scientist" role at one employer may be posted as "Insights Analyst" or "Data Consultant" at another). Name each priority category after the function it covers, and list several plausible job titles as query variants within that category rather than betting an entire priority tier on one exact title string.
+In the examples below, `...` stands for an enabled portal skill's CLI path (for example `.agents/skills/jobbnorge-search/cli/src/cli.ts`). Run each term with that portal's documented flags and `--format json`; do not execute the literal `...`.
 
-### Priority 1: [YOUR_PRIMARY_ROLE_TYPE]
+### Priority 1: Software, data and product
 
-These match your strongest and most desired career direction.
-
-```
-site:[YOUR_JOB_BOARD] "[YOUR_PRIMARY_JOB_TITLE_1]" [YOUR_CITY]
-site:[YOUR_JOB_BOARD] "[YOUR_PRIMARY_JOB_TITLE_2]" [YOUR_CITY]
-site:[YOUR_JOB_BOARD] "[YOUR_KEY_SKILL]" [YOUR_CITY]
-site:linkedin.com/jobs "[YOUR_PRIMARY_JOB_TITLE_1]" [YOUR_COUNTRY]
-```
-
-### Priority 2: [YOUR_DOMAIN_EXPERTISE]
-
-These match your domain expertise.
-
-```
-site:[YOUR_JOB_BOARD] [YOUR_DOMAIN_KEYWORD_1] [YOUR_CITY] OR [YOUR_REGION]
-site:[YOUR_JOB_BOARD] [YOUR_DOMAIN_KEYWORD_2] [YOUR_COUNTRY]
-site:linkedin.com/jobs [YOUR_DOMAIN_KEYWORD_1] [YOUR_CITY] [YOUR_COUNTRY]
+```bash
+# Norwegian
+... search -q "utvikler" -l area --jobage 14 --limit 20 --format json
+... search -q "programvareutvikler" -l area --jobage 14 --limit 20 --format json
+... search -q "dataingeniør" -l area --jobage 14 --limit 20 --format json
+... search -q "data scientist" -l area --jobage 14 --limit 20 --format json
+... search -q "produktleder" -l area --jobage 14 --limit 20 --format json
+# English
+... search -q "software engineer" -l area --jobage 14 --limit 20 --format json
+... search -q "data engineer" -l area --jobage 14 --limit 20 --format json
+... search -q "machine learning" -l area --jobage 14 --limit 20 --format json
+... search -q "product manager" -l area --jobage 14 --limit 20 --format json
 ```
 
-### Priority 3: [YOUR_ADJACENT_ROLE_TYPE]
+### Priority 2: Engineering, science and analysis
 
-Adjacent roles you could pivot into.
-
-```
-site:[YOUR_JOB_BOARD] "[YOUR_ADJACENT_TITLE_1]" [YOUR_KEY_SKILL] [YOUR_CITY]
-site:[YOUR_JOB_BOARD] "[YOUR_ADJACENT_TITLE_2]" [YOUR_KEY_SKILL] [YOUR_CITY]
-```
-
-### Priority 4: Broader Technical / Consulting
-
-Wider net for general technical roles.
-
-```
-site:[YOUR_JOB_BOARD] [YOUR_KEY_SKILL] developer [YOUR_CITY]
-site:linkedin.com/jobs "[YOUR_KEY_SKILL] developer" [YOUR_CITY]
-site:[YOUR_JOB_BOARD] "technical consultant" [YOUR_DOMAIN] [YOUR_CITY]
+```bash
+# Norwegian
+... search -q "ingeniør" -l area --jobage 14 --limit 20 --format json
+... search -q "sivilingeniør" -l area --jobage 14 --limit 20 --format json
+... search -q "prosjektleder" -l area --jobage 14 --limit 20 --format json
+... search -q "rådgiver" -l area --jobage 14 --limit 20 --format json
+... search -q "analytiker" -l area --jobage 14 --limit 20 --format json
+# English
+... search -q "engineer" -l area --jobage 14 --limit 20 --format json
+... search -q "project manager" -l area --jobage 14 --limit 20 --format json
+... search -q "analyst" -l area --jobage 14 --limit 20 --format json
+... search -q "researcher" -l area --jobage 14 --limit 20 --format json
 ```
 
-## Location Filter
+### Priority 3: Public sector, research and education
 
-When evaluating results, verify the job location is within reasonable commute distance from your home. Define acceptable areas:
-- [YOUR_CITY] and surrounding areas
-- [ACCEPTABLE_AREA_1]
-- [ACCEPTABLE_AREA_2]
-- [BORDERLINE_AREA] (borderline - ~X min by transit)
-- [TOO_FAR_AREA] (too far)
+Jobbnorge and Webcruiter carry most of these.
 
-## Language Filter
+```bash
+... search -q "stipendiat" -l area --jobage 14 --limit 20 --format json
+... search -q "postdoc" -l area --jobage 14 --limit 20 --format json
+... search -q "forsker" -l area --jobage 14 --limit 20 --format json
+... search -q "seniorrådgiver" -l area --jobage 14 --limit 20 --format json
+... search -q "saksbehandler" -l area --jobage 14 --limit 20 --format json
+... search -q "PhD" -l area --jobage 14 --limit 20 --format json
+```
 
-Your working languages and levels are in CLAUDE.md's Languages table. When filtering scraped results, apply `04-job-evaluation.md`'s Language Gate: a posting requiring a language you haven't declared at all is excluded; a posting requiring a higher level than you declared in a language you do work in is not excluded, flag it clearly instead (see `job-scraper/SKILL.md`'s Step 3 "Quick Fit Assessment" for how the flag surfaces in `/scrape` output). Postings simply *written* in a language you don't work in, that don't require it on the job, are fine.
+### Priority 4: Adjacent and broader technical roles
 
-## Date Filter
+```bash
+... search -q "devops" -l area --jobage 14 --limit 20 --format json
+... search -q "systemutvikler" -l area --jobage 14 --limit 20 --format json
+... search -q "forretningsutvikler" -l area --jobage 14 --limit 20 --format json
+... search -q "teknisk konsulent" -l area --jobage 14 --limit 20 --format json
+... search -q "IT-konsulent" -l area --jobage 14 --limit 20 --format json
+... search -q "technical consultant" -l area --jobage 14 --limit 20 --format json
+```
 
-Only include jobs posted within the last 14 days, or with an application deadline that has not yet passed. If a posting date cannot be determined, include it but flag as "date unknown".
+## WebSearch Fallback
 
-## Adapting Queries
+Use only for portals without a working CLI, a CLI failure, or company career pages. Keep the location term in every query.
 
-If the user specifies a focus area, select queries from the matching category and also generate 2-3 custom queries for that focus. For example:
-- "/scrape [focus_area]" -> relevant category queries + custom focus-specific queries
+```text
+site:arbeidsplassen.nav.no "utvikler" Trondheim
+site:jobbnorge.no "rådgiver" Trondheim
+site:finnoppdrag.no OR site:finn.no/job "utvikler" Trondheim
+site:linkedin.com/jobs "software engineer" "Trondheim"
+site:careers.nordicsemi.com Trondheim
+site:karriere.hent.no Trondheim
+```
+
+FINN.no is **not** scraped by a CLI: its robots.txt prohibits automated crawling. Use the FINN saved-search email alerts instead, and do not add a FINN CLI without written permission.
+
+## Language and Date Filters
+
+- Language: apply `04-job-evaluation.md`'s Language Gate. Postings requiring a language not declared in `CLAUDE.md` are excluded; a higher level than declared is flagged, not excluded.
+- Date: include postings from the last 14 days or with a future deadline. If the portal returns no date (Jobbnorge currently returns `date: null`), include the result and flag it as "date unknown".
+- Deduplication: every skill normalises `company` to `job_scraper/employers.csv`'s registry `name`; `scrape_state.py` then drops the same title+company found on two sources.

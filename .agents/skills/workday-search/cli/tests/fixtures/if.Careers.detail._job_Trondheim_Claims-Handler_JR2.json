@@ -1,0 +1,20 @@
+{
+  "jobPostingInfo": {
+    "id": "claims-trondheim",
+    "title": "Claims Handler",
+    "jobDescription": "<p>Join If's claims team in Trondheim.</p>",
+    "location": "Trondheim",
+    "additionalLocations": ["Oslo", "Bergen"],
+    "postedOn": "Posted 2 Days Ago",
+    "startDate": "2026-11-04",
+    "endDate": "2026-11-30",
+    "timeType": "Full time",
+    "jobReqId": "JR2",
+    "externalUrl": "https://if.wd502.myworkdayjobs.com/Careers/job/Trondheim/Claims-Handler_JR2",
+    "country": { "descriptor": "Norway", "id": "norway-id" },
+    "jobRequisitionLocation": {
+      "descriptor": "Trondheim",
+      "country": { "descriptor": "Norway", "id": "norway-id", "alpha2Code": "NO" }
+    }
+  }
+}

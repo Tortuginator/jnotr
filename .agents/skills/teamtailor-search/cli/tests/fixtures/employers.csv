@@ -1,0 +1,7 @@
+orgnr,name,aliases,trd_staff,nace,website,career_url,ats,ats_ref,confidence,enabled,status
+111111111,Alpha AS,,100,00.000,alpha.no,,teamtailor,https://alpha.teamtailor.com/jobs.rss,high,true,
+222222222,Beta AS,,50,00.000,beta.no,,teamtailor,https://beta.teamtailor.com/jobs.rss,high,true,
+333333333,Missing Ref AS,,40,00.000,missing.no,,teamtailor,,high,true,
+444444444,Disabled AS,,30,00.000,disabled.no,,teamtailor,https://disabled.teamtailor.com/jobs.rss,high,false,
+555555555,Webcruiter AS,,20,00.000,wc.no,,webcruiter,companylock=1,high,true,
+777777777,Fail Feed AS,,10,00.000,fail.no,,teamtailor,https://fail.teamtailor.com/jobs.rss,high,true,

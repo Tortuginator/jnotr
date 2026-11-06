@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:tt="https://teamtailor.com/locations">
+  <channel>
+    <title>Beta</title>
+    <link>https://beta.teamtailor.com/jobs</link>
+    <item>
+      <title>Beta Developer</title>
+      <description>&lt;p&gt;Join the Beta team in Trondheim.&lt;/p&gt;</description>
+      <pubDate>Thu, 05 Nov 2026 12:00:00 +0100</pubDate>
+      <link>https://beta.teamtailor.com/jobs/2001-beta-developer</link>
+      <guid>77777777-7777-4777-8777-777777777777</guid>
+      <remoteStatus>none</remoteStatus>
+      <tt:locations>
+        <tt:location>
+          <tt:name>Trondheim</tt:name>
+          <tt:zip>7040</tt:zip>
+          <tt:city>Trondheim</tt:city>
+          <tt:country>Norway</tt:country>
+        </tt:location>
+      </tt:locations>
+    </item>
+    <item>
+      <title>Stockholm Sales Lead</title>
+      <description>&lt;p&gt;Sell in Stockholm.&lt;/p&gt;</description>
+      <pubDate>Fri, 30 Oct 2026 12:00:00 +0100</pubDate>
+      <link>https://beta.teamtailor.com/jobs/2002-stockholm-sales-lead</link>
+      <guid>88888888-8888-4888-8888-888888888888</guid>
+      <remoteStatus>none</remoteStatus>
+      <tt:locations>
+        <tt:location>
+          <tt:name>Stockholm</tt:name>
+          <tt:zip>111 20</tt:zip>
+          <tt:city>Stockholm</tt:city>
+          <tt:country>Sweden</tt:country>
+        </tt:location>
+      </tt:locations>
+    </item>
+  </channel>
+</rss>

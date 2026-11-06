@@ -1,0 +1,41 @@
+{
+  "name": "Trondheim commute area",
+  "default": "Trondheim",
+  "municipalities": [
+    {
+      "code": "5001",
+      "name": "Trondheim",
+      "aliases": ["TRONDHEIM", "Trondheim kommune"],
+      "places": ["Heimdal", "Ranheim", "Tiller", "Byåsen", "Lerkendal", "Moholt", "Lade", "Dragvoll", "Lund"],
+      "postal_prefixes": ["70"]
+    },
+    {
+      "code": "5031",
+      "name": "Malvik",
+      "aliases": ["MALVIK", "Malvik kommune"],
+      "places": ["Hommelvik", "Vikhammer", "Muruvik", "Saksvik"],
+      "postal_prefixes": ["75"]
+    },
+    {
+      "code": "5028",
+      "name": "Melhus",
+      "aliases": ["MELHUS", "Melhus kommune"],
+      "places": ["Lundamo", "Kvål", "Gimse", "Hovin", "Korsvegen", "Melhus"],
+      "postal_prefixes": ["72"]
+    },
+    {
+      "code": "5029",
+      "name": "Skaun",
+      "aliases": ["SKAUN", "Skaun kommune"],
+      "places": ["Børsa", "Buvika", "Eggkleiva", "Venn", "Skaun"],
+      "postal_prefixes": ["73"]
+    },
+    {
+      "code": "5035",
+      "name": "Stjørdal",
+      "aliases": ["STJØRDAL", "STJORDAL", "Stjørdal kommune"],
+      "places": ["Hell", "Hegra", "Skatval", "Flornes", "Stjørdal"],
+      "postal_prefixes": ["75"]
+    }
+  ]
+}

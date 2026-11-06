@@ -1,0 +1,18 @@
+[
+  {
+    "id": 50,
+    "name": "Tr\u00f8ndelag",
+    "municipality": [
+      { "id": 5001, "name": "Trondheim" },
+      { "id": 5031, "name": "Malvik" },
+      { "id": 5028, "name": "Melhus" },
+      { "id": 5029, "name": "Skaun" },
+      { "id": 5035, "name": "Stj\u00f8rdal" }
+    ]
+  },
+  {
+    "id": 3,
+    "name": "Oslo",
+    "municipality": [{ "id": 301, "name": "Oslo" }]
+  }
+]

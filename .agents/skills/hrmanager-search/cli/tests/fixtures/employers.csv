@@ -1,0 +1,7 @@
+orgnr,name,aliases,trd_staff,nace,website,career_url,ats,ats_ref,confidence,enabled,status
+937901003,SPAREBANK 1 SMN,,559,64.190,www.smn.no,https://www.sparebank1.no/nb/bank/om-oss/jobb-og-karriere.html,hrmanager,customer=Sparebank1,high,true,
+915892981,GK NORGE AS,,268,43.223,www.gk.no,https://www.gk.no/jobb-i-gk,hrmanager,cid=139,high,true,
+993595675,MUSEENE I SØR-TRØNDELAG AS,,207,91.212,www.sverresborg.no,https://sverresborg.no/ledige-stillinger,hrmanager,cid=1004,high,true,
+936285066,SPAREBANK 1 REGNSKAPSHUSET SMN AS,,155,69.202,www.smnregnskap.no,https://www.sparebank1.no/nb/bank/om-oss/jobb-og-karriere.html,hrmanager,customer=Sparebank1,high,true,
+936285067,DISABLED HR AS,,10,69.202,,,hrmanager,customer=Disabled,high,false,
+936285068,OTHER ATS AS,,10,69.202,,,teamtailor,other,high,true,

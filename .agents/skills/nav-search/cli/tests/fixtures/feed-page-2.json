@@ -1,0 +1,27 @@
+{
+  "version": "https://jsonfeed.org/version/1.1",
+  "title": "NAV Job Vacancy Feed",
+  "home_page_url": "https://arbeidsplassen.nav.no",
+  "feed_url": "/api/v1/feed/fixture-page-2",
+  "description": "Fixture feed page 2",
+  "next_url": null,
+  "id": "fixture-page-2",
+  "next_id": null,
+  "items": [
+    {
+      "id": "66666666-6666-4666-8666-666666666666",
+      "url": "/api/v1/feedentry/66666666-6666-4666-8666-666666666666",
+      "title": "Butikkmedarbeider",
+      "content_text": "Stillingsannonse",
+      "date_modified": "2026-11-05T06:00:00+01:00",
+      "_feed_entry": {
+        "uuid": "66666666-6666-4666-8666-666666666666",
+        "status": "ACTIVE",
+        "title": "Butikkmedarbeider",
+        "businessName": "STJØRDAL KOMMUNE",
+        "municipal": "STJØRDAL",
+        "sistEndret": "2026-11-05T06:00:00+01:00"
+      }
+    }
+  ]
+}

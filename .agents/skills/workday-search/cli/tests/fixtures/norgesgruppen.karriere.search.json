@@ -1,0 +1,62 @@
+{
+  "total": 3,
+  "jobPostings": [
+    {
+      "title": "MENY Solsiden søker butikkmedarbeider",
+      "externalPath": "/job/MENY-Solsiden/MENY-Solsiden-soker-butikkmedarbeider_JR1",
+      "timeType": "Part time",
+      "locationsText": "Trondheim",
+      "postedOn": "Posted Today",
+      "bulletFields": [
+        "JR1",
+        "MENY"
+      ]
+    },
+    {
+      "title": "ASKO Trondheim terminal søker lagermedarbeider",
+      "externalPath": "/job/ASKO-Trondheim/ASKO-Trondheim-terminal-soker-lagermedarbeider_JR2",
+      "timeType": "Full time",
+      "locationsText": "Trondheim",
+      "postedOn": "Posted 3 Days Ago",
+      "bulletFields": [
+        "JR2",
+        "ASKO"
+      ]
+    },
+    {
+      "title": "Joker Heimdal søker butikkmedarbeider",
+      "externalPath": "/job/Joker-Heimdal/Joker-Heimdal-soker-butikkmedarbeider_JR3",
+      "timeType": "Part time",
+      "locationsText": "Heimdal",
+      "postedOn": "Posted Yesterday",
+      "bulletFields": [
+        "JR3",
+        "Joker"
+      ]
+    }
+  ],
+  "facets": [
+    {
+      "facetParameter": "locationMainGroup",
+      "values": [
+        {
+          "facetParameter": "locationHierarchy1",
+          "descriptor": "Municipality",
+          "values": [
+            {
+              "descriptor": "Trondheim",
+              "id": "trondheim-id",
+              "count": 2
+            },
+            {
+              "descriptor": "Heimdal",
+              "id": "heimdal-id",
+              "count": 1
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "userAuthenticated": false
+}

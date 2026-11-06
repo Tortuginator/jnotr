@@ -1,0 +1,9 @@
+orgnr,name,aliases,trd_staff,nace,website,career_url,ats,ats_ref,confidence,enabled,status
+1,EQUINOR ASA,,1,06.100,x,x,workday,https://equinor.wd3.myworkdayjobs.com/EQNR,high,true,
+2,NORCONSULT NORGE AS,,1,71.121,x,x,workday,https://norconsult.wd3.myworkdayjobs.com/Norconsult_Career_Site,high,true,
+3,ASKO MIDT-NORGE AS,,1,46.390,x,x,workday,https://norgesgruppen.wd3.myworkdayjobs.com/karriere,high,true,
+4,NG MENY MIDT-NORGE AS,,1,47.110,x,x,workday,https://norgesgruppen.wd3.myworkdayjobs.com/no-NO/karriere/job/Meny-Farmandstredet/example_JR100,high,true,
+5,NO REF AS,,1,x,x,x,workday,,high,true,
+6,DISABLED AS,,1,x,x,x,workday,https://disabled.wd3.myworkdayjobs.com/Site,high,false,
+7,TEAMTAILOR AS,,1,x,x,x,teamtailor,https://x.teamtailor.com/jobs.rss,high,true,
+8,IF SKADEFORSIKRING NUF,,1,65.120,x,x,workday,https://if.wd502.myworkdayjobs.com/Careers/,high,true,

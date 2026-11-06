@@ -1,0 +1,47 @@
+{
+  "offset": 0,
+  "limit": 100,
+  "totalFound": 3,
+  "content": [
+    {
+      "id": "744000160192843",
+      "name": "Senior systemutvikler",
+      "refNumber": "REF100",
+      "releasedDate": "2026-11-05T09:00:00.000Z",
+      "company": { "identifier": "SopraSteria1", "name": "Sopra Steria" },
+      "location": {
+        "city": "Trondheim",
+        "region": "Trøndelag",
+        "country": "no",
+        "postalCode": "7010",
+        "fullLocation": "Trondheim, Trøndelag, Norway"
+      }
+    },
+    {
+      "id": "744000160192844",
+      "name": "Data Engineer",
+      "releasedDate": "2026-11-04T09:00:00.000Z",
+      "company": { "identifier": "SopraSteria1", "name": "Sopra Steria" },
+      "location": {
+        "city": "Oslo",
+        "region": "Oslo",
+        "country": "no",
+        "postalCode": "0185",
+        "fullLocation": "Oslo, Oslo, Norway"
+      }
+    },
+    {
+      "id": "744000160192845",
+      "name": "Frontend-utvikler",
+      "releasedDate": "2026-01-02T09:00:00.000Z",
+      "company": { "identifier": "SopraSteria1", "name": "Sopra Steria" },
+      "location": {
+        "city": "Heimdal",
+        "region": "Trøndelag",
+        "country": "no",
+        "postalCode": "7075",
+        "fullLocation": "Heimdal, Trøndelag, Norway"
+      }
+    }
+  ]
+}

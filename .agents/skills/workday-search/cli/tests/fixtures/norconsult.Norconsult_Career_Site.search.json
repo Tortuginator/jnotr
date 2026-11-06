@@ -1,0 +1,37 @@
+{
+  "total": 2,
+  "jobPostings": [
+    {
+      "title": "Sommerjobb 2027 – Dam og vassdrag",
+      "externalPath": "/job/Trondheim/Sommerjobb-2027---Dam-og-vassdrag_REQ-6486",
+      "timeType": "Full time",
+      "locationsText": "Trondheim",
+      "postedOn": "Posted 14 Days Ago",
+      "bulletFields": ["REQ-6486"]
+    },
+    {
+      "title": "Rådgiver samferdsel",
+      "externalPath": "/job/Oslo/Raadgiver-samferdsel_REQ-6000",
+      "timeType": "Full time",
+      "locationsText": "Oslo",
+      "postedOn": "Posted Today",
+      "bulletFields": ["REQ-6000"]
+    }
+  ],
+  "facets": [
+    {
+      "facetParameter": "locationMainGroup",
+      "values": [
+        {
+          "facetParameter": "locations",
+          "descriptor": "Locations",
+          "values": [
+            { "descriptor": "Trondheim", "id": "trondheim-id", "count": 1 },
+            { "descriptor": "Oslo", "id": "oslo-id", "count": 1 }
+          ]
+        }
+      ]
+    }
+  ],
+  "userAuthenticated": false
+}

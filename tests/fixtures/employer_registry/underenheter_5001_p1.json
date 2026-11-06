@@ -1,0 +1,20 @@
+{
+  "_embedded": {
+    "underenheter": [
+      {
+        "organisasjonsnummer": "900000003",
+        "navn": "GAMMA AS",
+        "antallAnsatte": 80,
+        "naeringskode1": {"kode": "70.220", "beskrivelse": "Bedriftsrådgivning"},
+        "overordnetEnhet": "800000002",
+        "beliggenhetsadresse": {
+          "kommunenummer": "5001",
+          "kommune": "TRONDHEIM",
+          "postnummer": "7012",
+          "poststed": "TRONDHEIM"
+        }
+      }
+    ]
+  },
+  "page": {"number": 1, "size": 2, "totalElements": 3, "totalPages": 2}
+}

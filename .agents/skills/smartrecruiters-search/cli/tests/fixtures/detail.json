@@ -1,0 +1,34 @@
+{
+  "id": "744000160192843",
+  "name": "Senior systemutvikler",
+  "refNumber": "REF100",
+  "releasedDate": "2026-11-05T09:00:00.000Z",
+  "postingUrl": "https://jobs.smartrecruiters.com/SopraSteria1/744000160192843-senior-systemutvikler",
+  "company": { "identifier": "SopraSteria1", "name": "Sopra Steria" },
+  "location": {
+    "city": "Trondheim",
+    "region": "Trøndelag",
+    "country": "no",
+    "postalCode": "7010",
+    "fullLocation": "Trondheim, Trøndelag, Norway"
+  },
+  "department": { "label": "Application Development" },
+  "typeOfEmployment": { "label": "Full-time" },
+  "industry": { "label": "Information Technology" },
+  "jobAd": {
+    "sections": {
+      "companyDescription": {
+        "title": "Company Description",
+        "text": "<p>Sopra Steria er et ledende teknologiselskap.</p>"
+      },
+      "jobDescription": {
+        "title": "Job Description",
+        "text": "<p>Vi søker en <strong>senior systemutvikler</strong>.</p><p>Du jobber med Java og TypeScript.</p>"
+      },
+      "qualifications": {
+        "title": "Qualifications",
+        "text": "<ul><li>5 års erfaring</li><li>Norsk og engelsk</li></ul>"
+      }
+    }
+  }
+}
