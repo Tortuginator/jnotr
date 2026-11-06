@@ -3,21 +3,27 @@
 
 The registry is a CSV that ATS skills read: one row per employer, with the
 employer's organisation number, name, local headcount, recruitment system and
-everything that system needs to list its jobs. Four subcommands build it:
+everything that system needs to list its jobs. Six subcommands build it:
 
   fetch     page through the Brønnøysund register for local units in the
             commute municipalities and write a deterministic JSON snapshot.
   rollup    group those units under their top-level organisation (stopping
             below a ministry), sum local headcount and rank by it.
+  merge     union a working registry with one or more curated seed files by
+            organisation number, preserving manual base values.
   discover  read each employer's website, one career-page hop, a small number
             of job listings and their apply links, and detect the recruitment
-            system from links, widgets, scripts and redirects.
+            system from links, widgets, scripts and redirects. Third-party
+            hosts loaded by those pages are recorded as a debug aid.
   probe     try vendors' public feeds by company-name slug and keep a hit only
             when the feed's company name matches the registry name.
+  rebuild   run fetch, rollup, discover and probe in one command.
 
-The CSV is user-owned data. `rollup --seed` and every re-run of `discover` or
-`probe` preserve the values a human already set: `ats`, `ats_ref`, `enabled`,
-`website`, `career_url`, `confidence` and `status`.
+The CSV is user-owned data. `rollup --seed`, `merge` and every re-run of
+`discover` or `probe` preserve the values a human already set: `aliases`,
+`ats`, `ats_ref`, `enabled`, `website`, `career_url`, `confidence`, `status`,
+`relevance`, `theme` and `set`. `third_party_hosts` is discovered debug data
+and may be rewritten by `discover`.
 
 Only the standard library is used. HTTP goes through `http_get`, a module-level
 function that every command accepts as a `getter=` argument, so tests use
@@ -26,6 +32,9 @@ recorded fixtures and never touch the network.
 Usage:
   python3 tools/employer_registry.py fetch
   python3 tools/employer_registry.py rollup --seed trondheim-patches/employers.seed.csv
+  python3 tools/employer_registry.py merge --base job_scraper/employers.csv \\
+      --seed trondheim-patches/employers.seed.set2.csv \\
+      --out job_scraper/employers.csv --enable-relevance
   python3 tools/employer_registry.py discover
   python3 tools/employer_registry.py probe
 """
@@ -70,6 +79,10 @@ COLUMNS = [
     "confidence",
     "enabled",
     "status",
+    "relevance",
+    "theme",
+    "set",
+    "third_party_hosts",
 ]
 
 USER_AGENT = "Mozilla/5.0 (compatible; employer-registry/1.0)"
@@ -192,7 +205,7 @@ def write_json_atomic(path: Path, data) -> None:
         raise
 
 
-def write_csv_atomic(path: Path, rows) -> None:
+def write_csv_atomic(path: Path, rows, *, lineterminator: str = "\n") -> None:
     """Write the registry in a stable column order, then rename into place."""
     path = Path(path)
     _mkdir(path)
@@ -202,7 +215,7 @@ def write_csv_atomic(path: Path, rows) -> None:
             writer = csv.DictWriter(
                 handle,
                 fieldnames=COLUMNS,
-                lineterminator="\n",
+                lineterminator=lineterminator,
                 extrasaction="ignore",
             )
             writer.writeheader()
@@ -212,6 +225,16 @@ def write_csv_atomic(path: Path, rows) -> None:
     except BaseException:
         Path(tmp).unlink(missing_ok=True)
         raise
+
+
+def _detect_line_terminator(path: Path) -> str:
+    """Return the newline style already used by a CSV file, defaulting to LF."""
+    try:
+        with open(path, "rb") as handle:
+            sample = handle.read(65536)
+    except OSError:
+        return "\n"
+    return "\r\n" if b"\r\n" in sample else "\n"
 
 
 def read_csv(path: Path) -> list[dict]:
@@ -493,6 +516,10 @@ def rank_units(units: list[dict]) -> list[dict]:
                 "confidence": "",
                 "enabled": "true",
                 "status": "",
+                "relevance": "",
+                "theme": "",
+                "set": "",
+                "third_party_hosts": "",
             }
         )
     rows.sort(key=lambda row: (-int(row["trd_staff"]), row["orgnr"]))
@@ -534,6 +561,9 @@ def merge_seed(
             for column in ("website", "career_url", "ats", "ats_ref", "confidence", "enabled", "status"):
                 if seed.get(column):
                     out[column] = seed[column]
+            for column in ("relevance", "theme", "set", "third_party_hosts"):
+                if not out.get(column) and seed.get(column):
+                    out[column] = seed[column]
         if not out.get("ats"):
             out["ats"] = "none"
         if not out.get("enabled"):
@@ -551,6 +581,149 @@ def merge_seed(
             merged.append(_seed_row(seed))
             used.add(orgnr)
     return merged if preserve_seed else merged[:top]
+
+
+def _normalise_row(row: dict) -> dict:
+    return {column: (row.get(column) or "") for column in COLUMNS}
+
+
+def _normalise_ats(value: str) -> str:
+    return (value or "").strip().lower()
+
+
+def _is_real_ats(value: str) -> bool:
+    value = _normalise_ats(value)
+    return bool(value and value != "none")
+
+
+def _merge_registry_row(base: dict, seed: dict, conflicts: list[dict]) -> bool:
+    """Merge one seed row into a base row, keeping non-empty human values.
+
+    ``status`` is never copied into an existing base row: for curated rows it
+    is a manual value, and a blank status is itself a deliberate choice.
+    """
+    before = dict(base)
+
+    for column in (
+        "name",
+        "aliases",
+        "enabled",
+        "website",
+        "career_url",
+        "relevance",
+        "theme",
+        "set",
+        "third_party_hosts",
+    ):
+        if not base.get(column) and seed.get(column):
+            base[column] = seed[column]
+
+    for column in ("trd_staff", "nace"):
+        if not base.get(column) and seed.get(column):
+            base[column] = seed[column]
+
+    base_ats = _normalise_ats(base.get("ats"))
+    seed_ats = _normalise_ats(seed.get("ats"))
+    base_ref = (base.get("ats_ref") or "").strip()
+    seed_ref = (seed.get("ats_ref") or "").strip()
+    base_status = (base.get("status") or "").strip()
+    locked_none = base_ats == "none" and bool(base_status)
+
+    if locked_none:
+        if _is_real_ats(seed_ats):
+            conflicts.append(
+                {
+                    "orgnr": base.get("orgnr", ""),
+                    "base_ats": base_ats,
+                    "seed_ats": seed_ats,
+                    "kept": base_ats,
+                }
+            )
+    elif not _is_real_ats(base_ats):
+        if _is_real_ats(seed_ats):
+            base["ats"] = (seed.get("ats") or "").strip()
+            base["ats_ref"] = seed_ref
+            if seed.get("confidence"):
+                base["confidence"] = seed["confidence"]
+    elif _is_real_ats(seed_ats) and base_ats == seed_ats:
+        if not base_ref:
+            if seed_ref:
+                base["ats_ref"] = seed_ref
+            if seed.get("confidence"):
+                base["confidence"] = seed["confidence"]
+    elif _is_real_ats(seed_ats) and base_ats != seed_ats:
+        conflicts.append(
+            {
+                "orgnr": base.get("orgnr", ""),
+                "base_ats": base_ats,
+                "seed_ats": seed_ats,
+                "kept": base_ats,
+            }
+        )
+
+    return base != before
+
+
+def merge_rows(
+    base_rows: list[dict], seed_rows: list[dict], *, enable_relevance: bool = False
+) -> tuple[list[dict], dict]:
+    """Union rows by organisation number, keeping the base order.
+
+    Base rows keep every human value, including a deliberately blank ``status``;
+    seed rows only fill gaps and add employers that are not in the base. New
+    rows follow the order they appear across the seed files. With
+    ``enable_relevance`` the ``enabled`` switch of newly appended rows is derived
+    from ``relevance``; existing rows are never touched. A later seed row for an
+    employer already appended in this run may fill its relevance/theme/set and
+    ATS fields, then re-derives ``enabled`` when the flag is set.
+    """
+    rows = [_normalise_row(row) for row in base_rows]
+    index = {row["orgnr"]: row for row in rows if row.get("orgnr")}
+    base_orgnrs = set(index)
+    appended: set[str] = set()
+    added = 0
+    updated = 0
+    conflicts: list[dict] = []
+
+    for raw in seed_rows:
+        seed = _normalise_row(raw)
+        orgnr = seed["orgnr"].strip()
+        if not orgnr:
+            continue
+        seed["orgnr"] = orgnr
+        base = index.get(orgnr)
+        if base is None:
+            if enable_relevance:
+                seed["enabled"] = (
+                    "true" if _normalise_ats(seed.get("relevance")) in ("high", "possible") else "false"
+                )
+            if not seed.get("ats"):
+                seed["ats"] = "none"
+            if not seed.get("enabled"):
+                seed["enabled"] = "true"
+            rows.append(seed)
+            index[orgnr] = seed
+            appended.add(orgnr)
+            added += 1
+            continue
+        if orgnr in appended:
+            _merge_registry_row(base, seed, conflicts)
+            if enable_relevance:
+                base["enabled"] = (
+                    "true" if _normalise_ats(base.get("relevance")) in ("high", "possible") else "false"
+                )
+            continue
+        if _merge_registry_row(base, seed, conflicts) and orgnr in base_orgnrs:
+            updated += 1
+
+    summary = {
+        "base_rows": len(base_rows),
+        "added": added,
+        "updated": updated,
+        "conflicts": conflicts,
+        "total": len(rows),
+    }
+    return rows, summary
 
 
 def rollup_units(
@@ -631,6 +804,14 @@ DONEAI_URL = re.compile(
 )
 CAREERHUB_URL = re.compile(
     r"https?://(?:[a-z0-9-]+\.)*careerhub\.se(?:[/?#][^\s\"'<>]*)?", re.IGNORECASE
+)
+HEARTPACE_URL = re.compile(
+    r"https?://(?:[a-z0-9-]+\.)*heartpace\.com(?=[/?#\"'\s<>]|$)[^\s\"'<>]*",
+    re.IGNORECASE,
+)
+JOBBSYS_URL = re.compile(
+    r"https?://(?:[a-z0-9-]+\.)*jobbsys\.no(?=[/?#\"'\s<>]|$)[^\s\"'<>]*",
+    re.IGNORECASE,
 )
 
 WORKDAY_HOST = re.compile(
@@ -848,6 +1029,28 @@ def detect_ats(urls, htmls) -> Detection | None:
         ref = url if parts.path and parts.path != "/" else ""
         detections.append(Detection("careerhub", ref, "medium", "careerhub"))
 
+    match = HEARTPACE_URL.search(scan)
+    if match:
+        url = _clean_url(match.group(0))
+        if not re.match(r"^https?://", url, re.IGNORECASE):
+            url = "https://" + url
+        parts = urlsplit(url)
+        host = (parts.hostname or "").lower()
+        ref = url if host.startswith("hiring.") or (parts.path and parts.path != "/") else ""
+        confidence = "high" if host.startswith("hiring.") else "medium"
+        detections.append(Detection("heartpace", ref, confidence, "heartpace"))
+
+    match = JOBBSYS_URL.search(scan)
+    if match:
+        url = _clean_url(match.group(0))
+        if not re.match(r"^https?://", url, re.IGNORECASE):
+            url = "https://" + url
+        parts = urlsplit(url)
+        host = (parts.hostname or "").lower()
+        ref = url if host not in {"jobbsys.no", "www.jobbsys.no"} or (parts.path and parts.path != "/") else ""
+        confidence = "high" if host not in {"jobbsys.no", "www.jobbsys.no"} else "medium"
+        detections.append(Detection("jobbsys", ref, confidence, "jobbsys"))
+
     match = WORKDAY_HOST.search(scan)
     if match:
         detections.append(
@@ -1004,6 +1207,7 @@ def _find_career_links(base: str, html: str) -> list[str]:
 _ATTR_URL = re.compile(
     r"""(?:href|src|data-src|data-href)\s*=\s*["']([^"']+)["']""", re.IGNORECASE
 )
+_ABS_URL = re.compile(r"https?://[^\s\"'<>\\)\]]+", re.IGNORECASE)
 _LISTING_URL = re.compile(
     r"(?:/job/|/jobs/|/stilling(?:er)?(?:/|$|[?#])|/ledige-stillinger(?:/|$|[?#])"
     r"|/positions?(?:/|$|[?#])|/vacanc(?:y|ies)(?:/|$|[?#])|[?&]job_id="
@@ -1017,7 +1221,7 @@ _APPLY_URL = re.compile(
 )
 _KNOWN_ATS_URL = re.compile(
     r"myworkdayjobs\.com|myworkday\.com|vismatalent\.com|avature\.net|avacdn\.net"
-    r"|done\.ai|careerhub\.se|reachmee\.com|teamtailor\.com|webcruiter\.com"
+    r"|done\.ai|careerhub\.se|heartpace\.com|jobbsys\.no|reachmee\.com|teamtailor\.com|webcruiter\.com"
     r"|smartrecruiters\.com|hr-manager\.net|jobbnorge\.no|successfactors\."
     r"|oraclecloud\.com|recruitee\.com|jobylon\.com|recman\.|easycruit\.com"
     r"|icims\.com|webtemp\.",
@@ -1054,6 +1258,57 @@ def _extract_urls(base: str, html: str) -> list[str]:
         if url not in links:
             links.append(url)
     return links
+
+
+_BAD_HOST_CHAR = re.compile(r"""[\s&"'<>\\]|[\x00-\x1f\x7f]""")
+
+
+def _host_from_url(url: str) -> str:
+    """Return a lowercase hostname, or "" for anything that will not parse.
+
+    HTML entities and other URL debris (`foo.com&quot`, `foo.com&`) are not
+    real hostnames, so they are rejected instead of polluting the debug field.
+    """
+    try:
+        candidate = unescape(str(url or "").strip())
+        host = (urlsplit(candidate).hostname or "").lower()
+    except (TypeError, ValueError):
+        return ""
+    host = host.strip(".")
+    if not host or _BAD_HOST_CHAR.search(host):
+        return ""
+    return host
+
+
+def _own_hostname(website: str) -> str:
+    host = _host_from_url(website)
+    return host[4:] if host.startswith("www.") else host
+
+
+def _is_own_host(host: str, own_host: str) -> bool:
+    if not host or not own_host:
+        return False
+    return host == own_host or host.endswith("." + own_host)
+
+
+def _collect_third_party_hosts(
+    hosts: set[str], base: str, html: str, page_url: str, own_host: str
+) -> None:
+    """Add external hosts referenced by one fetched page, never raising."""
+    urls = [page_url]
+    try:
+        urls.extend(_extract_urls(base or page_url, html or ""))
+    except (TypeError, ValueError):
+        pass
+    urls.extend(_clean_url(match.group(0)) for match in _ABS_URL.finditer(html or ""))
+    for url in urls:
+        host = _host_from_url(url)
+        if host and not _is_own_host(host, own_host):
+            hosts.add(host)
+
+
+def _third_party_hosts_value(hosts: set[str], limit: int = 20) -> str:
+    return "|".join(sorted(hosts)[:limit])
 
 
 def _is_listing_url(url: str) -> bool:
@@ -1100,7 +1355,7 @@ def _discover_one(
     force: bool,
     robots_cache: dict,
     lock,
-    max_listings: int = 2,
+    max_listings: int = 3,
     max_apply_hops: int = 1,
 ) -> tuple[dict, dict]:
     out = dict(row)
@@ -1108,6 +1363,8 @@ def _discover_one(
     summary = {"orgnr": out.get("orgnr", ""), "name": out.get("name", ""), "outcome": "skipped"}
     if not website:
         return out, summary
+    own_host = _own_hostname(website)
+    third_party_hosts: set[str] = set()
     if not _robots_allowed(website, getter=getter, timeout=timeout, cache=robots_cache, lock=lock):
         out["status"] = "blocked"
         summary["outcome"] = "blocked"
@@ -1121,6 +1378,7 @@ def _discover_one(
         out["status"] = "blocked"
         summary["outcome"] = "blocked"
         return out, summary
+    _collect_third_party_hosts(third_party_hosts, home.url, home.text, home.url, own_host)
 
     detection = detect_ats([home.url, website], [home.text])
     fetched = {home.url.rstrip("/"), website.rstrip("/")}
@@ -1153,6 +1411,7 @@ def _discover_one(
         if not career_found:
             career_found = actual
         pages.append((actual, response.text))
+        _collect_third_party_hosts(third_party_hosts, actual, response.text, actual, own_host)
         candidate_detection = detect_ats([actual, candidate], [response.text])
         if candidate_detection and (
             detection is None
@@ -1192,6 +1451,7 @@ def _discover_one(
         actual = response.url or candidate
         fetched.update({key, actual.rstrip("/")})
         listing_pages.append((actual, response.text))
+        _collect_third_party_hosts(third_party_hosts, actual, response.text, actual, own_host)
         listing_detection = detect_ats([actual, candidate], [response.text])
         if listing_detection and (
             detection is None
@@ -1231,6 +1491,7 @@ def _discover_one(
             continue
         actual = response.url or candidate
         fetched.update({key, actual.rstrip("/")})
+        _collect_third_party_hosts(third_party_hosts, actual, response.text, actual, own_host)
         apply_detection = detect_ats([actual, candidate], [response.text])
         if apply_detection and (
             detection is None
@@ -1239,6 +1500,7 @@ def _discover_one(
             detection = apply_detection
 
     _apply_detection(out, detection, force=force)
+    out["third_party_hosts"] = _third_party_hosts_value(third_party_hosts)
     if career_found and (not out.get("career_url") or force):
         out["career_url"] = career_found
     if detection:
@@ -1257,7 +1519,7 @@ def discover_rows(
     timeout: float = 10.0,
     concurrency: int = 4,
     force: bool = False,
-    max_listings: int = 2,
+    max_listings: int = 3,
     max_apply_hops: int = 1,
     getter=http_get,
 ) -> tuple[list[dict], dict]:
@@ -1567,6 +1829,24 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     rollup.add_argument("--top", type=int, default=150)
 
+    merge = subparsers.add_parser(
+        "merge", help="merge curated seed CSV files into a working registry"
+    )
+    merge.add_argument("--base", type=Path, default=DEFAULT_CSV)
+    merge.add_argument(
+        "--seed",
+        type=Path,
+        action="append",
+        required=True,
+        help="seed CSV to merge; repeat for multiple files",
+    )
+    merge.add_argument("--out", type=Path, default=DEFAULT_CSV)
+    merge.add_argument(
+        "--enable-relevance",
+        action="store_true",
+        help="derive enabled from relevance for newly appended rows only",
+    )
+
     discover = subparsers.add_parser("discover", help="detect ATSs from employer websites")
     discover.add_argument("--in", "--input", dest="input", type=Path, default=DEFAULT_CSV)
     discover.add_argument("--out", type=Path, default=None)
@@ -1577,8 +1857,8 @@ def _build_parser() -> argparse.ArgumentParser:
         "--listings",
         dest="max_listings",
         type=int,
-        default=2,
-        help="maximum job-listing pages to follow per employer (default: 2)",
+        default=3,
+        help="maximum job-listing pages to follow per employer (default: 3)",
     )
     discover.add_argument(
         "--apply-hops",
@@ -1615,7 +1895,7 @@ def _build_parser() -> argparse.ArgumentParser:
     rebuild.add_argument("--max-pages", type=int, default=None)
     rebuild.add_argument("--timeout", type=float, default=15.0)
     rebuild.add_argument("--concurrency", type=int, default=4)
-    rebuild.add_argument("--listings", dest="max_listings", type=int, default=2)
+    rebuild.add_argument("--listings", dest="max_listings", type=int, default=3)
     rebuild.add_argument("--apply-hops", dest="max_apply_hops", type=int, default=1)
     rebuild.add_argument("--force", action="store_true")
 
@@ -1644,6 +1924,18 @@ def main(argv=None) -> int:
                 top=args.top,
                 preserve_seed=args.preserve_seed,
             )
+        elif args.command == "merge":
+            base_rows = read_csv(args.base)
+            seed_rows: list[dict] = []
+            for seed_path in args.seed:
+                seed_rows.extend(read_csv(seed_path))
+            rows, summary = merge_rows(
+                base_rows, seed_rows, enable_relevance=args.enable_relevance
+            )
+            write_csv_atomic(
+                args.out, rows, lineterminator=_detect_line_terminator(args.base)
+            )
+            summary["out"] = str(args.out)
         elif args.command == "discover":
             rows = read_csv(args.input)
             out_path = args.out or args.input

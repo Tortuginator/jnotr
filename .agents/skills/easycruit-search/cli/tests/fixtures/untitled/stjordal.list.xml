@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VacancyList generated="2026-11-06T14:15:37" xmlns="urn:EasyCruit">
+  <Vacancy id="1" date_start="2026-11-05" date_end="2026-12-01" reference_number="">
+    <Versions>
+      <Version language="nb">
+        <Title/>
+        <TitleHeading/>
+        <Location>Stjørdal</Location>
+      </Version>
+    </Versions>
+    <Departments>
+      <Department id="1">
+        <VacancyURL>https://stjordal.easycruit.com/vacancy/1/1</VacancyURL>
+      </Department>
+    </Departments>
+  </Vacancy>
+</VacancyList>

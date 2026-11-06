@@ -183,7 +183,222 @@ class RollupTests(unittest.TestCase):
         self.assertEqual(rows[-1]["ats"], "jobbnorge")
 
 
+class MergeTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        self.base = FIXTURES / "merge_base.csv"
+        self.seed = FIXTURES / "merge_seed_set2.csv"
+
+    def merge(self, enable_relevance=False):
+        return er.merge_rows(
+            er.read_csv(self.base),
+            er.read_csv(self.seed),
+            enable_relevance=enable_relevance,
+        )
+
+    def test_appends_new_rows_in_seed_order(self):
+        rows, summary = self.merge()
+
+        self.assertEqual(
+            [row["orgnr"] for row in rows],
+            ["1001", "1002", "1003", "1004", "2001", "2002", "2003"],
+        )
+        self.assertEqual(summary["base_rows"], 4)
+        self.assertEqual(summary["added"], 3)
+        self.assertEqual(summary["total"], 7)
+
+    def test_preserves_manual_base_values_and_fills_gaps(self):
+        rows, _ = self.merge()
+
+        manual = rows[0]
+        self.assertEqual(manual["name"], "Base Manual AS")
+        self.assertEqual(manual["aliases"], "Existing Alias|Second Alias")
+        self.assertEqual(manual["website"], "https://manual.test")
+        self.assertEqual(manual["career_url"], "https://manual.test/jobs")
+        self.assertEqual(manual["status"], "career_site_only")
+        self.assertEqual(manual["relevance"], "high")
+        self.assertEqual(manual["theme"], "research")
+        self.assertEqual(manual["set"], "set1")
+        self.assertEqual(manual["ats"], "teamtailor")
+        self.assertEqual(manual["ats_ref"], "https://manual.teamtailor.com/jobs.rss")
+        self.assertEqual(manual["enabled"], "false")
+        self.assertEqual(manual["trd_staff"], "120")
+
+        filled = rows[1]
+        self.assertEqual(filled["name"], "Base Fill AS")
+        self.assertEqual(filled["aliases"], "Seed Alias Two")
+        self.assertEqual(filled["website"], "https://fill.test")
+        self.assertEqual(filled["ats"], "smartrecruiters")
+        self.assertEqual(filled["ats_ref"], "fillco")
+        self.assertEqual(filled["confidence"], "high")
+        self.assertEqual(filled["trd_staff"], "80")
+
+        same = rows[2]
+        self.assertEqual(same["ats"], "teamtailor")
+        self.assertEqual(same["ats_ref"], "https://seed.teamtailor.com/jobs.rss")
+        self.assertEqual(same["confidence"], "high")
+
+    def test_ats_conflict_keeps_base_and_reports(self):
+        rows, summary = self.merge()
+
+        conflict = rows[3]
+        self.assertEqual(conflict["ats"], "webcruiter")
+        self.assertEqual(conflict["ats_ref"], "companylock=9")
+        by_orgnr = {item["orgnr"]: item for item in summary["conflicts"]}
+        self.assertEqual(sorted(by_orgnr), ["1001", "1004"])
+        self.assertEqual(by_orgnr["1004"]["base_ats"], "webcruiter")
+        self.assertEqual(by_orgnr["1004"]["seed_ats"], "smartrecruiters")
+        self.assertEqual(by_orgnr["1001"]["base_ats"], "teamtailor")
+        self.assertEqual(by_orgnr["1001"]["seed_ats"], "webcruiter")
+
+    def test_locked_none_ats_is_not_replaced_by_seed(self):
+        base = [
+            make_row(
+                orgnr="914048117",
+                name="I K LYKKE DRIFT AS",
+                ats="none",
+                ats_ref="",
+                confidence="",
+                status="career_site_only",
+            )
+        ]
+        seed = [
+            make_row(
+                orgnr="914048117",
+                name="I K LYKKE DRIFT AS",
+                ats="reachmee",
+                ats_ref="https://rema.no/jobs",
+                confidence="high",
+                status="",
+            )
+        ]
+
+        rows, summary = er.merge_rows(base, seed)
+        self.assertEqual(rows[0]["ats"], "none")
+        self.assertEqual(rows[0]["ats_ref"], "")
+        self.assertEqual(rows[0]["confidence"], "")
+        self.assertEqual(rows[0]["status"], "career_site_only")
+        conflict = {item["orgnr"]: item for item in summary["conflicts"]}["914048117"]
+        self.assertEqual(conflict["base_ats"], "none")
+        self.assertEqual(conflict["seed_ats"], "reachmee")
+        self.assertEqual(conflict["kept"], "none")
+
+    def test_enable_relevance_only_affects_new_rows(self):
+        without, _ = self.merge()
+        with_flag, _ = self.merge(enable_relevance=True)
+
+        self.assertEqual(without[0]["enabled"], "false")
+        self.assertEqual(without[4]["enabled"], "true")
+        self.assertEqual(without[6]["enabled"], "true")
+
+        self.assertEqual(with_flag[0]["enabled"], "false")
+        self.assertEqual(with_flag[4]["enabled"], "true")
+        self.assertEqual(with_flag[5]["enabled"], "true")
+        self.assertEqual(with_flag[6]["enabled"], "false")
+
+    def test_curated_blank_status_survives_rerun(self):
+        base = [make_row(orgnr="9001", name="Curated AS", status="")]
+        seed = [make_row(orgnr="9001", name="Curated AS", status="check_website")]
+
+        first, first_summary = er.merge_rows(base, seed)
+        self.assertEqual(first[0]["status"], "")
+        self.assertEqual(first_summary["updated"], 0)
+
+        out = self.root / "status_rerun.csv"
+        er.write_csv_atomic(out, first)
+        second, second_summary = er.merge_rows(er.read_csv(out), seed)
+        self.assertEqual(second[0]["status"], "")
+        self.assertEqual(second_summary["updated"], 0)
+
+    def test_new_rows_default_ats_and_enabled_when_seed_omits_columns(self):
+        base = [make_row(orgnr="1", name="Existing AS")]
+        seed = [{"orgnr": "2", "name": "Missing Columns AS"}]
+
+        rows, summary = er.merge_rows(base, seed)
+        self.assertEqual(summary["added"], 1)
+        new = rows[1]
+        self.assertEqual(new["ats"], "none")
+        self.assertEqual(new["enabled"], "true")
+
+    def test_duplicate_new_row_relevance_rederives_enabled(self):
+        seeds = [
+            make_row(orgnr="3001", name="Duplicate AS", relevance=""),
+            make_row(
+                orgnr="3001",
+                name="Duplicate AS",
+                relevance="high",
+                theme="research",
+                set="set2",
+                ats="teamtailor",
+                ats_ref="https://dup.teamtailor.com/jobs.rss",
+                enabled="false",
+            ),
+        ]
+
+        rows, summary = er.merge_rows([], seeds, enable_relevance=True)
+        self.assertEqual(summary["added"], 1)
+        self.assertEqual(rows[0]["relevance"], "high")
+        self.assertEqual(rows[0]["theme"], "research")
+        self.assertEqual(rows[0]["set"], "set2")
+        self.assertEqual(rows[0]["ats"], "teamtailor")
+        self.assertEqual(rows[0]["enabled"], "true")
+
+    def test_merge_command_writes_and_prints_summary(self):
+        out = self.root / "employers.csv"
+        with contextlib.redirect_stdout(io.StringIO()) as stdout:
+            code = er.main(
+                [
+                    "merge",
+                    "--base",
+                    str(self.base),
+                    "--seed",
+                    str(self.seed),
+                    "--out",
+                    str(out),
+                    "--enable-relevance",
+                ]
+            )
+        self.assertEqual(code, 0)
+        summary = json.loads(stdout.getvalue())
+        self.assertEqual(summary["base_rows"], 4)
+        self.assertEqual(summary["added"], 3)
+        self.assertEqual(summary["total"], 7)
+        self.assertEqual(summary["out"], str(out))
+        self.assertEqual(len(er.read_csv(out)), 7)
+
+    def test_merge_preserves_base_line_terminator(self):
+        crlf_base = self.root / "crlf_base.csv"
+        crlf_base.write_bytes(self.base.read_bytes().replace(b"\r\n", b"\n").replace(b"\n", b"\r\n"))
+        out = self.root / "crlf_out.csv"
+
+        with contextlib.redirect_stdout(io.StringIO()):
+            code = er.main(
+                [
+                    "merge",
+                    "--base",
+                    str(crlf_base),
+                    "--seed",
+                    str(self.seed),
+                    "--out",
+                    str(out),
+                ]
+            )
+        self.assertEqual(code, 0)
+        data = out.read_bytes()
+        self.assertIn(b"\r\n", data)
+        self.assertNotIn(b"\n", data.replace(b"\r\n", b""))
+
+
 class CsvTests(unittest.TestCase):
+    def test_schema_column_order_is_fixed(self):
+        expected = (
+            "orgnr,name,aliases,trd_staff,nace,website,career_url,ats,ats_ref,"
+            "confidence,enabled,status,relevance,theme,set,third_party_hosts"
+        )
+        self.assertEqual(",".join(er.COLUMNS), expected)
+
     def test_header_order_and_atomic_write(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
@@ -414,6 +629,97 @@ class DiscoverTests(unittest.TestCase):
         self.assertEqual(row["ats_ref"], "https://acme.teamtailor.com/jobs.rss")
         self.assertEqual(row["confidence"], "high")
         self.assertEqual(row["enabled"], "false")
+
+    def test_default_follows_three_listings(self):
+        extra = {
+            f"https://acme.test/job/{index}": fixture("listing_many_apply.html")
+            for index in range(1, 6)
+        }
+        mapping = {
+            "https://acme.test/robots.txt": fixture("robots_allow.txt"),
+            "https://acme.test/": fixture("homepage_with_career.html"),
+            "https://acme.test/karriere": fixture("career_many_listings.html"),
+        }
+        mapping.update(extra)
+        getter = MapGetter(mapping)
+        updated, _ = er.discover_rows(
+            [make_row(website="https://acme.test/")],
+            top=1,
+            timeout=1.0,
+            concurrency=1,
+            getter=getter,
+        )
+        listing_calls = [url for url in getter.calls if "/job/" in url]
+        self.assertEqual(len(listing_calls), 3)
+        self.assertEqual(updated[0]["ats"], "none")
+
+    def test_cli_defaults_follow_three_listings_and_one_apply_hop(self):
+        args = er._build_parser().parse_args(["discover"])
+        self.assertEqual(args.max_listings, 3)
+        self.assertEqual(args.max_apply_hops, 1)
+
+    def test_apply_link_hop_detects_heartpace(self):
+        row, summary, getter = self.discover(
+            "career_workday_listing.html",
+            extra={
+                "https://acme.test/job/123": fixture("listing_workday.html"),
+                "https://acme.test/apply/123": fixture("apply_heartpace.html"),
+            },
+        )
+        self.assertIn("https://acme.test/job/123", getter.calls)
+        self.assertIn("https://acme.test/apply/123", getter.calls)
+        self.assertEqual(row["ats"], "heartpace")
+        self.assertEqual(row["ats_ref"], "https://hiring.heartpace.com/acme/apply/123")
+        self.assertEqual(row["confidence"], "high")
+        self.assertEqual(summary["detected"], 1)
+
+    def test_detects_heartpace_hiring_portal(self):
+        row, _, _ = self.discover("career_heartpace.html")
+        self.assertEqual(row["ats"], "heartpace")
+        self.assertEqual(row["ats_ref"], "https://hiring.heartpace.com/acme/careers")
+        self.assertEqual(row["confidence"], "high")
+
+    def test_detects_jobbsys_customer_site(self):
+        row, _, _ = self.discover("career_jobbsys.html")
+        self.assertEqual(row["ats"], "jobbsys")
+        self.assertEqual(row["ats_ref"], "https://acme.jobbsys.no/stillinger")
+        self.assertEqual(row["confidence"], "high")
+
+    def test_records_sorted_third_party_hosts(self):
+        row, _, _ = self.discover("career_third_party.html")
+        self.assertEqual(
+            row["third_party_hosts"],
+            "careers.vendor.example|cdn.example.net|fonts.example.org",
+        )
+
+    def test_third_party_hosts_drop_html_entity_debris(self):
+        row, _, _ = self.discover("career_third_party_entities.html")
+        self.assertEqual(
+            row["third_party_hosts"],
+            "careers.vendor.example|cdn.example.net",
+        )
+
+
+class DetectionRegexTests(unittest.TestCase):
+    def test_heartpace_requires_real_hostname(self):
+        positive = er.detect_ats(["https://hiring.heartpace.com/acme/careers"], [])
+        self.assertIsNotNone(positive)
+        self.assertEqual(positive.ats, "heartpace")
+        self.assertEqual(positive.ref, "https://hiring.heartpace.com/acme/careers")
+        self.assertEqual(positive.confidence, "high")
+
+        self.assertIsNone(er.detect_ats(["https://example.com/blog/heartpace.com"], []))
+        self.assertIsNone(er.detect_ats(["https://hiring.heartpace.com.evil.com/"], []))
+
+    def test_jobbsys_requires_real_hostname(self):
+        positive = er.detect_ats(["https://acme.jobbsys.no/stillinger"], [])
+        self.assertIsNotNone(positive)
+        self.assertEqual(positive.ats, "jobbsys")
+        self.assertEqual(positive.ref, "https://acme.jobbsys.no/stillinger")
+        self.assertEqual(positive.confidence, "high")
+
+        self.assertIsNone(er.detect_ats(["https://example.com/blog/jobbsys.no"], []))
+        self.assertIsNone(er.detect_ats(["https://acme.jobbsys.no.evil.com/"], []))
 
 
 class ProbeTests(unittest.TestCase):

@@ -294,8 +294,8 @@ For **country-agnostic** starting points outside Denmark, the repo ships two por
 This fork targets the Trondheim commute area (Trondheim, Malvik, Melhus, Skaun, Stjørdal). It adds:
 
 - **Board skills:** `nav-search` (NAV Arbeidsplassen's job feed, cached locally by `sync`), `jobbnorge-search` (public Jobbnorge API), and the repo's `linkedin-search`.
-- **ATS skills:** `teamtailor-search`, `webcruiter-search`, `reachmee-search`, `smartrecruiters-search`, `hrmanager-search`, `workday-search`, `vismatalent-search`. Each reads the enabled employers in `job_scraper/employers.csv` and pools their public job lists, normalising `company` to the registry name so cross-source duplicates collapse in `scrape_state.py`.
-- **Employer registry:** `trondheim-patches/employers.seed.csv` is the committed seed (150 employers from the Brønnøysund register; 86 with a recognised system, plus Bravida's career-site-only row). `tools/employer_registry.py` rebuilds it with `fetch`, `rollup`, `discover`, `probe`, or one-command `rebuild`; `discover` follows listings and apply links and recognises Workday, Visma Talent, Avature, Done.ai and CareerHub. `job_scraper/employers.csv` and `job_scraper/area.json` are user data and git-ignored.
+- **ATS skills:** `teamtailor-search`, `webcruiter-search`, `reachmee-search`, `smartrecruiters-search`, `hrmanager-search`, `workday-search`, `vismatalent-search`, `easycruit-search`. Each reads the enabled employers in `job_scraper/employers.csv` and pools their public job lists, normalising `company` to the registry name so cross-source duplicates collapse in `scrape_state.py`.
+- **Employer registry:** `trondheim-patches/employers.seed.csv` is the committed seed: 342 employer rows from the Brønnøysund register, of which 165 carry a recognised system (any `ats` other than empty or `none`, including `jobbnorge`) and 251 are enabled. Round 2 added `relevance`, `theme` and `set` columns, sustainability and ecology employers, and the `easycruit-search` connector; SuccessFactors employers are left to NAV and Jobbnorge. `tools/employer_registry.py` rebuilds it with `fetch`, `rollup`, `merge`, `discover`, `probe`, or one-command `rebuild`; `discover` follows up to three listing pages and one apply link and recognises Workday, Visma Talent, EasyCruit, Avature, Done.ai and CareerHub. `job_scraper/employers.csv` and `job_scraper/area.json` are user data and git-ignored.
 - **Detected but not connected:** Siemens Energy (Avature), Prima Assistanse (Done.ai) and SJ Norge (CareerHub) have `status=no_connector`; they are visible in the registry but need a future skill. Bravida is `career_site_only` and covered through NAV/boards.
 - **Area filter:** every area-aware CLI accepts `-l area`, which reads `job_scraper/area.json`.
 
@@ -320,7 +320,7 @@ Rebuild the employer registry quarterly (or when an employer changes ATS) with o
 python3 tools/employer_registry.py rebuild
 ```
 
-Individual steps remain available for debugging: `fetch`, `rollup --preserve-seed`, `discover`, `probe`.
+Individual steps remain available for debugging: `fetch`, `rollup --preserve-seed`, `merge`, `discover`, `probe`.
 
 FINN.no is deliberately **not** scraped: its robots.txt prohibits automated crawling without written permission. Use FINN saved-search email alerts instead.
 

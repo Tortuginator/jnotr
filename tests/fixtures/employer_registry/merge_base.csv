@@ -1,0 +1,5 @@
+orgnr,name,aliases,trd_staff,nace,website,career_url,ats,ats_ref,confidence,enabled,status,relevance,theme,set,third_party_hosts
+1001,Base Manual AS,Existing Alias|Second Alias,120,62.010,https://manual.test,https://manual.test/jobs,teamtailor,https://manual.teamtailor.com/jobs.rss,high,false,career_site_only,high,research,set1,https://old.vendor.example
+1002,Base Fill AS,,80,71.120,https://fill.test,,,,,true,,possible,consulting,,
+1003,Base Same ATS AS,,40,,https://same.test,,teamtailor,,,true,,,,,
+1004,Base Conflict AS,,30,,https://conflict.test,,webcruiter,companylock=9,high,true,,medium,public,,

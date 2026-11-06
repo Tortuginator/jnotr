@@ -86,6 +86,7 @@ ALLOWED_PERMISSIONS = {
     "Bash(bun run .agents/skills/hrmanager-search/cli/src/cli.ts:*)",
     "Bash(bun run .agents/skills/workday-search/cli/src/cli.ts:*)",
     "Bash(bun run .agents/skills/vismatalent-search/cli/src/cli.ts:*)",
+    "Bash(bun run .agents/skills/easycruit-search/cli/src/cli.ts:*)",
     "Bash(python salary_lookup.py:*)",
     "Bash(python3 salary_lookup.py:*)",
     "Bash(python tools/rank_state.py:*)",

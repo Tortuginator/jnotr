@@ -1,0 +1,8 @@
+orgnr,name,aliases,trd_staff,nace,website,career_url,ats,ats_ref,confidence,enabled,status,relevance,theme,set
+1001,Seed Renamed AS,Seed Alias,999,99.999,https://seed-one.test,https://seed-one.test/jobs,webcruiter,companylock=1,high,false,seedstatus,low,seedtheme,set2
+1002,Seed Fill Renamed,Seed Alias Two,81,71.120,https://seed-two.test,https://seed-two.test/jobs,smartrecruiters,fillco,high,true,,possible,consulting,set2
+1003,Seed Same ATS AS,,40,,https://seed-three.test,,teamtailor,https://seed.teamtailor.com/jobs.rss,high,true,,high,research,set2
+1004,Seed Conflict AS,,30,,https://seed-four.test,,smartrecruiters,conflictco,high,true,,medium,public,set2
+2001,Brand New High AS,,5,,https://new-high.test,,jobbnorge,,high,true,,high,research,set2
+2002,Brand New Possible AS,,5,,https://new-possible.test,,none,,,true,,possible,consulting,set2
+2003,Brand New None AS,,5,,https://new-none.test,,none,,,true,,,retail,set2

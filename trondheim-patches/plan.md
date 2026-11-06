@@ -81,12 +81,14 @@ A user-owned file `job_scraper/employers.csv`, one row per employer. ATS skills 
 | `confidence` | high | high / medium / low from detection |
 | `enabled` | true | User switch per employer |
 
-The tool `tools/employer_registry.py` has four subcommands:
+The tool `tools/employer_registry.py` has six subcommands:
 
 1. `fetch` pulls local units from the Brønnøysund API for a list of municipality numbers and a minimum headcount (defaults: `5001`, 50).
 2. `rollup` groups units under their top organisation, stopping below ministries, and ranks by local headcount.
-3. `discover` finds websites and career pages and detects the ATS from links, embedded widgets and redirects, one hop beyond the career page.
-4. `probe` checks vendors' public job feeds by company-name slug and keeps a hit only when the feed's company name matches.
+3. `merge` unions one or more curated seed files into the working registry by organisation number, preserving the values a human already set.
+4. `discover` finds websites and career pages and detects the ATS from links, embedded widgets and redirects; it follows up to three job-listing pages and one apply-link hop.
+5. `probe` checks vendors' public job feeds by company-name slug and keeps a hit only when the feed's company name matches.
+6. `rebuild` runs `fetch`, `rollup`, `discover` and `probe` in one command.
 
 A first version of this data already exists: `trondheim-recruitment-systems.xlsx` (150 employers, 80 with a detected system). The registry tool's first run should reproduce it, and agents can seed `employers.csv` from it.
 
@@ -334,7 +336,7 @@ Manual seed values, aliases, NACE/website/career URLs and `enabled` were preserv
 | --- | --- | --- |
 | WP10 `workday-search` | Done | Public `POST /wday/cxs/<tenant>/<site>/jobs` search plus `GET ...<externalPath>` detail. Location facets, multi-location detail verification, 5 employers. Live: 10 area results from NG Meny, Equinor, Norconsult, SPAR. |
 | WP11 `vismatalent-search` | Done | Public `GetJobList?siteGuid=` API; 1 employer today (Nortura), but this is the Webcruiter migration path. Live: 4 Nortura jobs, area 0 (all current ads are outside Trondheim). |
-| WP12 registry deep discovery | Done | `discover` follows up to 2 listing pages and 1 apply link, and recognises Workday, Visma Talent, Avature/avacdn, Done.ai and CareerHub. Live re-run on the 7 additions detected 7/7. |
+| WP12 registry deep discovery | Done | `discover` follows up to 3 listing pages and 1 apply link, and recognises Workday, Visma Talent, Avature/avacdn, Done.ai and CareerHub. Live re-run on the 7 additions detected 7/7. |
 
 `workday-search` and `vismatalent-search` are registered in `.claude/settings.json` and `tools/security_guards.py`, and listed in `search-queries.md`.
 
@@ -372,3 +374,57 @@ Remaining caveats:
 - **HR Manager null locations.** RSS rows with no extractable location are excluded from location-filtered runs; several Sparebank 1 rows currently have `location: null`.
 - **Jobbnorge generic locations.** `Flere` rows are excluded from filtered runs; a detail check would be needed to admit the subset that includes the area.
 - **NAV places fallback.** `nav-search` now matches municipal names/aliases, `area.json` place names (whole-token) and postal prefixes. If `area.json` is missing, its built-in fallback still covers the five municipality names only.
+
+## Round 2 build record (6 Nov 2026)
+
+Round 2 extends the registry and `/scrape` toward ecology, bioeconomy and sustainability roles. It does not change the historical records above.
+
+### WP10 registry schema and merge
+
+- Added `relevance`, `theme`, `set` and `third_party_hosts` to `job_scraper/employers.csv`, `trondheim-patches/employers.seed.csv` and `tools/employer_registry.py`. `relevance`, `theme` and `set` are preserved as human-owned values on re-runs; `third_party_hosts` is discover debug data and may be rewritten.
+- Added the `merge` subcommand: it unions curated seed files into the working registry by `orgnr`, keeps non-empty base values, and can enable new rows by relevance with `--enable-relevance`.
+- Merged the hand-off into the previous 167-row working registry: 342 rows in total (167 base + 175 appended; 5 of the 180 set2 rows matched existing base rows). The merge applied 7 top-150 additions and 33 relevance tags to existing rows.
+- 180 rows carry a `set` tag (`next 100` or `sustainability`), of which 91 are enabled. New rows are enabled only when `relevance` is `high` or `possible`; existing top-150 rows keep their previous `enabled` values. The merged registry has 251 enabled rows.
+
+### WP11 discover upgrades
+
+- `discover` now follows up to 3 job-listing pages per employer (default) and one apply-link hop, so systems that appear only on a listing or apply link are still found.
+- Added Heartpace (`heartpace.com`) and Jobbsys (`jobbsys.no`) signatures alongside Workday, Visma Talent, Avature/avacdn, Done.ai and CareerHub.
+- Added the `third_party_hosts` debug column: it records the third-party hosts loaded by the career, listing and apply pages (sorted, capped), so unknown vendors can be spotted by hand.
+
+### WP12 EasyCruit connector
+
+- Built `easycruit-search` and live-tested it on Stjørdal kommune, Trøndelag brann- og redningstjeneste (TBRT) and Handelshøyskolen BI on 6 Nov 2026.
+- Public read paths: `/rss` for descriptions, `/export/xml/vacancy/list.xml` for IDs, title, dates and workplace, `/export/xml/vacancy/<id>.xml` for detail, and `/vacancy/<id>/rss` for the HTML detail page. The AWS WAF challenge on the root and HTML search pages is reported, never solved or bypassed.
+- Registry `ats_ref` was filled for the three EasyCruit rows (`https://stjordal.easycruit.com`, `https://tbrt.easycruit.com`, `https://bi.easycruit.com`).
+
+### WP12 SuccessFactors assessment
+
+- Assessed the 14 SuccessFactors rows (13 distinct career sites). NAV or Jobbnorge already carries 13/14, so no `successfactors-search` connector was built.
+- Lerøy Seafood Group is the exception: its career site is WAF-blocked and its SF-only Trondheim job does not appear on NAV or Jobbnorge.
+- Fiskeridirektoratet was a mislabel: its applications go to ContactRH, not SuccessFactors, and the registry now says `contactrh`.
+- The SuccessFactors rows remain `no_connector` and are covered through NAV/Jobbnorge.
+
+### WP13 search terms
+
+- Added a Priority 2 (ecology, bioeconomy and sustainability) query category to `.claude/skills/job-scraper/search-queries.md`, in Norwegian and English, as the round-2 hand-off's starting set. It is not yet confirmed by the human.
+- Noted that sustainability roles often have generic titles (`rådgiver`, `seniorrådgiver`, `prosjektleder`), so CLIs must match the query against title **and** description, not title alone.
+
+### Data caveats
+
+- 2 rows carry `status=missing_ats_ref` (GK Norge and Norges geologiske undersøkelse); both are intentionally disabled until a ref is verified. GK's public jobs moved to Teamtailor, and NGU's Webcruiter `companylock=102020` does not serve a working list; NAV/Jobbnorge cover both.
+- I K Lykke Drift was listed in the handoff as a ReachMee employer with a `rema.no` website, but the register and the live site show it is a Bunnpris operator. It is now `ats=none`, `status=career_site_only`, website `bunnpris.no`, career page `https://www.bunnpris.no/jobb-i-bunnpris`, and disabled by the next-100 default. No ReachMee ref was invented. `merge` treats a non-empty `status` on an `ats=none` row as a lock, so a later seed re-run cannot turn it back into ReachMee.
+- Bot checks are recorded as `blocked` and never retried. The merged registry has 14 such rows, 5 of them round-2 additions (Microchip, Siemens AS, FiiZK, Landbrukstjenester and Hydrogen Mem-Tech).
+- 2 round-2 sites still carry `status=check_website`: Hammer Planteskole (enabled sustainability row, TLS/host failure) and Royal Flames Hammerfjell (disabled next-100 row, DNS failure).
+- Aliases for the 175 appended rows are not populated yet; the 5 set2 rows that matched existing rows kept their aliases. A Brønnøysund snapshot can backfill roughly two thirds of them, but 87 appended rows are below that snapshot's staff threshold.
+- Elkjøp is `enabled=false` by default, so its ReachMee feed is not read until the human enables it.
+- Franzefoss Gjenvinning had zero current jobs when checked on 6 Nov 2026.
+- BioMar and Salmar are reachable through their connectors but had no current jobs in the commute area on 6 Nov 2026.
+
+### Next
+
+- Run `/scrape` and `/scrape health` against the merged registry, then check that area filtering and cross-source dedup still hold.
+- Confirm the private `NAV_API_TOKEN` for regular runs.
+- Decide whether to keep Webcruiter and SmartRecruiters enabled under their personal-use terms.
+- Optionally enrich aliases for the 175 appended rows from a Brønnøysund fetch.
+- Rebuild quarterly with `python3 tools/employer_registry.py rebuild`, preserving seed rows and manual values.
