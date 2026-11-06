@@ -62,7 +62,7 @@ bun run .agents/skills/reachmee-search/cli/src/cli.ts detail <posting-url> [--fo
 | `--query` | `-q` | Keywords matched against title, company and list text |
 | `--location` | `-l` | `area` for the commute area in `job_scraper/area.json`, or a municipality/place/city. Omit for no filter |
 | `--jobage` | | Keep postings with a published date within N days |
-| `--location-detail-limit <n>` | | When `--location` is set and a list row has no location, fetch up to N detail pages to find one (default 30) |
+| `--location-detail-limit <n>` | | When `--location` is set and a list row has no location, fetch up to N detail pages to find one (default 200) |
 | `--page` | | 1-indexed page of the pooled results (default 1) |
 | `--limit` | | Page size and cap on emitted results (default 50) |
 | `--format` | | `json` (default), `table`, `plain` |
@@ -116,7 +116,7 @@ Missing values are `null`, never omitted.
   those values are used. Some Attract lists have no location column at all
   (Sweco's Trainee site is one). With `--location`, rows whose list entry has no
   location are resolved from the posting's detail page (up to
-  `--location-detail-limit`, default 30) before the filter is applied. Without
+  `--location-detail-limit`, default 200) before the filter is applied; if more rows than the cap lack a location, `meta.warning` reports the number not checked. Without
   `--location`, those rows keep `location: null`.
 - **Date fallback.** ReachMee lists commonly expose only a deadline
   (`Søknadsfrist` / `Sista ansökningsdag`), not a posting date. `date` is

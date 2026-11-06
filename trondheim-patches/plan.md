@@ -354,6 +354,8 @@ Two independent audits ran every portal CLI with `-l area`, specific locations, 
 - **Webcruiter displayed only the first workplace** for multi-location postings (`Oslo` even when the row also covered Trondheim). It now joins all `Workplace*` fields and de-duplicates them.
 - **Jobbnorge trusted the API municipality filter**, which returned Bodø and generic `Flere` rows for Trondheim queries. Search now post-filters the result's own `location` against the resolved municipality/area names and reports excluded rows in `meta.note`. Generic `Flere` rows are excluded from location-filtered runs.
 - **Workday returned HTTP 400 for `--limit` above 20**, producing zero results with per-employer errors. The CXS page size is now capped at 20 and the CLI pages until `--limit` is satisfied; `--limit 21/30/100` returns the same 11 area jobs with no errors.
+- **ReachMee's detail-location cap** was 30 and could silently omit later area jobs. The default is now 200 (all current unknown-location rows) and `meta.warning` reports any rows left unchecked when a lower `--location-detail-limit` is used.
+- **NAV ignored `area.json` place names**. `isInArea` and specific municipality filters now match place names with whole-token matching, so Heimdal matches Trondheim, while Vennesla does not match Senn/Venn.
 
 Re-verified live after the fixes:
 
@@ -366,7 +368,7 @@ Re-verified live after the fixes:
 Remaining caveats:
 
 - **NAV source data.** The feed's `municipal` is the registered municipality. A Dedicare staffing ad tagged `STJØRDAL`/postal `7500` advertises work on Vestlandet; the filter cannot detect that from the feed. Treat NAV area hits as candidates.
-- **ReachMee detail cap.** Area filtering resolves missing list locations from detail pages up to `--location-detail-limit` (default 30). If more than 30 rows lack a location, later area rows can be omitted; raise the flag for a deeper check.
+- **ReachMee detail cap.** Area filtering resolves missing list locations from detail pages up to `--location-detail-limit` (default 200). The default covers the current data; if a larger feed leaves rows unchecked, `meta.warning` reports the count.
 - **HR Manager null locations.** RSS rows with no extractable location are excluded from location-filtered runs; several Sparebank 1 rows currently have `location: null`.
 - **Jobbnorge generic locations.** `Flere` rows are excluded from filtered runs; a detail check would be needed to admit the subset that includes the area.
-- **NAV places fallback.** `nav-search` matches municipal names/aliases and postal prefixes; its `area.json` place list is not used for matching today, but all active cache records have `municipal`.
+- **NAV places fallback.** `nav-search` now matches municipal names/aliases, `area.json` place names (whole-token) and postal prefixes. If `area.json` is missing, its built-in fallback still covers the five municipality names only.

@@ -155,7 +155,8 @@ Errors go to **stderr** as `{ "error": "...", "code": "..." }` with exit code 1.
 - An ACTIVE entry never resurrects an ad whose cached INACTIVE state is newer
   or equally new.
 - `--location area` reads `job_scraper/area.json` (municipality names, aliases,
-  and postal prefixes). If that file is missing it falls back to Trondheim,
+  place names, and postal prefixes). A place name is matched as a whole token,
+  so `Venn` does not match `Vennesla`. If that file is missing it falls back to Trondheim,
   Malvik, Melhus, Skaun, and Stjørdal.
 - `company` is normalized to `job_scraper/employers.csv` by `name`, pipe-separated
   `aliases`, or `orgnr` (when the detail carries one). If the registry is absent,

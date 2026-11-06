@@ -562,12 +562,30 @@ function areaNames(municipality: AreaMunicipality): string[] {
     .filter(Boolean)
 }
 
+function tokens(value: string): string[] {
+  return key(value).split(/[^a-z0-9æøå]+/i).filter(Boolean)
+}
+
+/** Whole-token phrase match, so "Venn" does not match "Vennesla". */
+function containsPlace(haystack: string, needle: string): boolean {
+  const wanted = tokens(needle)
+  if (wanted.length === 0) return false
+  const haystackTokens = tokens(haystack)
+  for (let i = 0; i + wanted.length <= haystackTokens.length; i++) {
+    if (wanted.every((token, j) => haystackTokens[i + j] === token)) return true
+  }
+  return false
+}
+
 export function isInArea(record: NormRecord, area: AreaConfig): boolean {
   const municipal = key(record.municipal ?? record.location ?? "")
   const postal = (record.postal_code ?? "").replace(/\s+/g, "")
   for (const municipality of area.municipalities) {
     const names = areaNames(municipality)
     if (municipal && names.some((name) => name === municipal || municipal.includes(name) || name.includes(municipal))) {
+      return true
+    }
+    if (municipal && municipality.places.some((place) => containsPlace(municipal, place))) {
       return true
     }
     if (postal && municipality.postal_prefixes.some((prefix) => postal.startsWith(prefix))) {
@@ -596,6 +614,9 @@ export function matchesLocation(record: NormRecord, location: string | undefined
     const names = areaNames(municipality)
     if (names.some((name) => name === wanted || name.includes(wanted) || wanted.includes(name))) {
       if (values.some((value) => names.some((name) => value === name || value.includes(name) || name.includes(value)))) {
+        return true
+      }
+      if (values.some((value) => municipality.places.some((place) => containsPlace(value, place)))) {
         return true
       }
     }

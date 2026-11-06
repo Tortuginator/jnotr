@@ -46,7 +46,7 @@ SEARCH FLAGS
                           Lists that only expose a deadline are dropped by this filter.
   --location-detail-limit <n>
                           For list rows that omit location, fetch up to N detail
-                          pages to find one when --location is set. Default 30.
+                          pages to find one when --location is set. Default 200.
   --page <n>              1-indexed page of the pooled results. Default 1.
   --limit <n>             Page size and cap on emitted results. Default 50.
   --format <fmt>          json (default) | table | plain.
@@ -116,7 +116,7 @@ async function main(): Promise<number> {
     }
 
     let jobage: number | undefined
-    let locationDetailLimit = 30
+    let locationDetailLimit = 200
     let page = 1
     let limit: number | undefined
     if (flags["location-detail-limit"] !== undefined) {

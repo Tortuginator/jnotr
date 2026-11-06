@@ -53,12 +53,13 @@ export const defaultDeps = (): SearchDeps => ({
 export async function collectResults(
   opts: SearchOpts,
   deps: SearchDeps = defaultDeps(),
-): Promise<{ results: JobResult[]; errors: MetaError[] }> {
+): Promise<{ results: JobResult[]; errors: MetaError[]; warnings: string[] }> {
   if (opts.location && fold(opts.location) === "area" && !deps.area) {
     throw new Error("job_scraper/area.json is missing, so --location area cannot be applied")
   }
 
   const errors: MetaError[] = []
+  const warnings: string[] = []
   const pooled: JobResult[] = []
   // ReachMee list pages often omit location (Asplan's "Sted" column is blank;
   // Sweco's Attract table has no location column at all). When a location
@@ -110,7 +111,12 @@ export async function collectResults(
   })
 
   if (opts.location && unknownLocation.length > 0) {
-    const cap = opts.locationDetailLimit ?? 30
+    const cap = opts.locationDetailLimit ?? 200
+    if (unknownLocation.length > cap) {
+      warnings.push(
+        `${unknownLocation.length - cap} listing(s) with no location were not checked because --location-detail-limit=${cap}; raise it to include them.`,
+      )
+    }
     await mapLimit(unknownLocation.slice(0, cap), MAX_CONCURRENCY, async ({ employer, parsed }) => {
       try {
         const target = normalizeDetailTarget(parsed.result.url)
@@ -133,7 +139,7 @@ export async function collectResults(
   }
 
   errors.sort((a, b) => a.employer.localeCompare(b.employer))
-  return { results: sortResults(pooled), errors }
+  return { results: sortResults(pooled), errors, warnings }
 }
 
 function displayId(id: string): string {
@@ -171,7 +177,7 @@ function renderPlain(results: JobResult[]): string {
 
 export async function runSearch(opts: SearchOpts, deps: SearchDeps = defaultDeps()): Promise<number> {
   try {
-    const { results, errors } = await collectResults(opts, deps)
+    const { results, errors, warnings } = await collectResults(opts, deps)
     const emitted = paginate(results, opts.page, opts.limit).map((result) => stripInvisible(result))
 
     if (opts.format === "table") {
@@ -181,7 +187,15 @@ export async function runSearch(opts: SearchOpts, deps: SearchDeps = defaultDeps
     } else {
       process.stdout.write(
         JSON.stringify(
-          { meta: { count: emitted.length, page: opts.page, errors: stripInvisible(errors) }, results: emitted },
+          {
+            meta: {
+              count: emitted.length,
+              page: opts.page,
+              errors: stripInvisible(errors),
+              ...(warnings.length ? { warning: warnings.join(" ") } : {}),
+            },
+            results: emitted,
+          },
           null,
           2,
         ) + "\n",

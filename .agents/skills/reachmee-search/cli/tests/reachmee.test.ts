@@ -251,6 +251,32 @@ describe("ReachMee collectResults", () => {
     expect(results[0].location).toBe("Oslo, Drammen, Ås")
   })
 
+  test("warns when the location detail cap truncates", async () => {
+    const list = `<table class="jobsTableClass"><tbody>
+      <tr><td><a href='https://web103.reachmee.com/ext/I010/2581/job?site=6&lang=NO&validator=x&job_id=215'>A</a></td><td></td><td>10.11.2026</td></tr>
+      <tr><td><a href='https://web103.reachmee.com/ext/I010/2581/job?site=6&lang=NO&validator=x&job_id=232'>B</a></td><td></td><td>10.11.2026</td></tr>
+    </tbody></table>`
+    const employer = {
+      ...asplan,
+      atsRef: "https://web103.reachmee.com/ext/I010/2581/main?site=6&lang=NO&validator=x",
+    }
+    const deps = {
+      area: loadArea(),
+      employers: [employer],
+      fetchText: async (url: string) => {
+        if (url.includes("/ext/I010/2581/main?")) return list
+        if (url.includes("job_id=")) return fixture("ext-detail.html")
+        return null
+      },
+    }
+    const { warnings } = await collectResults(
+      { page: 1, location: "Oslo", locationDetailLimit: 1, format: "json" },
+      deps,
+    )
+    expect(warnings).toHaveLength(1)
+    expect(warnings[0]).toContain("not checked")
+  })
+
   test("applies query, location and jobage filters", async () => {
     const deps = makeDeps(fixture("ext-list.html"), fixture("attract-list-with-published.html"))
     const query = await collectResults({ page: 1, query: "student", format: "json" }, deps)

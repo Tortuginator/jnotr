@@ -103,6 +103,8 @@ describe("area matching", () => {
   test("matches postal prefixes", () => {
     expect(isInArea(baseRecord({ municipal: null, location: null, postal_code: "7030" }), area)).toBe(true)
     expect(isInArea(baseRecord({ municipal: null, location: null, postal_code: "0150" }), area)).toBe(false)
+    expect(isInArea(baseRecord({ municipal: null, location: "Heimdal", postal_code: null }), area)).toBe(true)
+    expect(isInArea(baseRecord({ municipal: null, location: "Vennesla", postal_code: null }), area)).toBe(false)
   })
 })
 
