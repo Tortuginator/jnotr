@@ -240,7 +240,7 @@ orgnr,name,aliases,trd_staff,nace,website,career_url,ats,ats_ref,confidence,enab
 817209882,Aktieselskapet Vinmonopolet,,94,47.250,www.vinmonopolet.no,https://www.vinmonopolet.no/om-oss/jobbe-hos-oss,jobbnorge,employer=789,high,false,,,,next 100,
 980352706,MOTOR-TRADE AS,,93,95.310,motortrade.no,,none,,,false,,,,next 100,
 915254209,BERTEL O. STEEN TRØNDELAG AS,,92,95.310,www.bos.no/forhandlere/bertel-o-steen-trondheim,,none,,,false,,,,next 100,
-976389387,ERNST & YOUNG AS,,92,69.201,ey.com/no_no,https://www.ey.com/no_no/careers,successfactors,,medium,false,,,,next 100,
+976389387,ERNST & YOUNG AS,,92,69.201,ey.com/no_no,https://www.ey.com/no_no/careers,successfactors,,medium,false,no_connector,,,next 100,
 966349786,NORPRINS AS,,92,55.100,prinsenhotel.no,,none,,,false,,,,next 100,
 987059729,STATKRAFT ENERGI AS,,92,35.121,statkraft.no,https://www.statkraft.no/karriere/,smartrecruiters,Statkraft1,high,true,,high,energy,next 100,
 959934924,ADECCO SOLUTIONS AS,,91,78.200,adecco.no,https://www.adecco.com/nb-no/ledige-stillinger,none,,,false,,,,next 100,

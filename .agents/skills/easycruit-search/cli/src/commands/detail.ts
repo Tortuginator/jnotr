@@ -6,7 +6,7 @@ import {
   employerLocationHint,
   fetchHtml,
   fetchXml,
-  htmlToText,
+  htmlToTextDecoded,
   loadArea,
   loadRegistry,
   normalizeDate,
@@ -95,7 +95,7 @@ export async function runDetail(opts: DetailOpts, deps: DetailDeps = {}): Promis
   const location = combineLocation(htmlDetail?.location ?? xmlDetail?.location, hint, employer?.name ?? null)
   const date = normalizeDate(xmlDetail?.dateStart)
   const url = xmlDetail?.vacancyUrl ?? canonicalVacancyUrl(slug, vacancyId)
-  const description = htmlDetail?.description ?? htmlToText(xmlDetail?.descriptionHtml)
+  const description = htmlDetail?.description ?? htmlToTextDecoded(xmlDetail?.descriptionHtml)
   const employmentType = xmlDetail && xmlDetail.categories.length > 0 ? xmlDetail.categories.join(", ") : null
 
   const job = stripInvisible({

@@ -25,6 +25,7 @@ import {
   type JobResult,
   type MetaError,
   type ParsedResult,
+  type ReachSource,
 } from "../helpers.js"
 
 export interface SearchOpts {
@@ -50,6 +51,59 @@ export const defaultDeps = (): SearchDeps => ({
   fetchText,
 })
 
+/**
+ * Identity of a ReachMee source. Several registry rows can point at the same
+ * customer through different list URLs (different site/validator query
+ * strings), so fetch by customer/base rather than by exact listUrl.
+ */
+export function reachSourceIdentity(source: ReachSource): string {
+  const base = source.base.toLowerCase().replace(/\/+$/, "")
+  if (source.kind === "ext" && source.code && source.customer) {
+    return `ext:${base}:${source.code.toUpperCase()}:${source.customer}`
+  }
+  return `${source.kind}:${base}`
+}
+
+/**
+ * Canonical identity of a posting, used to keep one row per posting when two
+ * registry rows share a customer. Legacy ext URLs carry the posting id in
+ * `job_id`; Attract URLs carry it in the path.
+ */
+export function canonicalResultKey(result: JobResult): string {
+  const raw = (result.url ?? "").trim()
+  if (raw) {
+    try {
+      const parsed = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`)
+      const host = parsed.hostname.toLowerCase()
+      const ext = parsed.pathname.match(/^\/ext\/(I\d+)\/(\d+)\/(?:job|main)/i)
+      if (/^web\d+\.reachmee\.com$/.test(host) && ext) {
+        const jobId = parsed.searchParams.get("job_id")
+        if (jobId) return `reachmee:ext:${ext[1].toUpperCase()}:${ext[2]}:job:${jobId}`
+        return `reachmee:url:${host}${parsed.pathname.replace(/\/+$/, "")}${parsed.search}`
+      }
+      if (/\.attract\.reachmee\.com$/i.test(host)) {
+        return `reachmee:attract:${host}${parsed.pathname.replace(/\/+$/, "").toLowerCase()}`
+      }
+      return `url:${host}${parsed.pathname.replace(/\/+$/, "")}${parsed.search}`
+    } catch {
+      // Not a URL; fall through to the id.
+    }
+  }
+  const id = (result.id ?? "").trim()
+  return id ? `id:${id.toLowerCase()}` : `url:${raw.toLowerCase()}`
+}
+
+interface SourceGroup {
+  key: string
+  source: ReachSource
+  employers: Employer[]
+}
+
+interface GroupRows {
+  known: ParsedResult[]
+  unknown: ParsedResult[]
+}
+
 export async function collectResults(
   opts: SearchOpts,
   deps: SearchDeps = defaultDeps(),
@@ -60,55 +114,98 @@ export async function collectResults(
 
   const errors: MetaError[] = []
   const warnings: string[] = []
-  const pooled: JobResult[] = []
-  // ReachMee list pages often omit location (Asplan's "Sted" column is blank;
-  // Sweco's Attract table has no location column at all). When a location
-  // filter is requested, defer those rows and read their detail page instead
-  // of dropping them as non-matches.
-  const unknownLocation: Array<{ employer: Employer; parsed: ParsedResult }> = []
 
-  await mapLimit(deps.employers, MAX_CONCURRENCY, async (employer) => {
+  const resolved: Array<{ employer: Employer; source: ReachSource } | null> = deps.employers.map(() => null)
+  await mapLimit(
+    deps.employers.map((employer, index) => ({ employer, index })),
+    MAX_CONCURRENCY,
+    async ({ employer, index }) => {
+      try {
+        const source = await resolveSource(employer, deps.fetchText)
+        if (!source) {
+          errors.push({
+            employer: employer.name,
+            error:
+              "no usable ReachMee list source: ats_ref has no validator and no Attract site or validator-bearing ReachMee link was found (the seed ats_ref may be stale)",
+          })
+          return
+        }
+        resolved[index] = { employer, source }
+      } catch (e) {
+        errors.push({ employer: employer.name, error: e instanceof Error ? e.message : String(e) })
+      }
+    },
+  )
+
+  // Group in registry order so the first enabled row owns the shared customer
+  // and supplies the fetched list URL and company attribution.
+  const groups: SourceGroup[] = []
+  const byKey = new Map<string, SourceGroup>()
+  for (const entry of resolved) {
+    if (!entry) continue
+    const key = reachSourceIdentity(entry.source)
+    let group = byKey.get(key)
+    if (!group) {
+      group = { key, source: entry.source, employers: [] }
+      byKey.set(key, group)
+      groups.push(group)
+    }
+    group.employers.push(entry.employer)
+  }
+
+  const groupRows: GroupRows[] = groups.map(() => ({ known: [], unknown: [] }))
+
+  await mapLimit(groups, MAX_CONCURRENCY, async (group) => {
+    const slot = groupRows[groups.indexOf(group)]
     try {
-      const source = await resolveSource(employer, deps.fetchText)
-      if (!source) {
-        errors.push({
-          employer: employer.name,
-          error:
-            "no usable ReachMee list source: ats_ref has no validator and no Attract site or validator-bearing ReachMee link was found (the seed ats_ref may be stale)",
-        })
-        return
-      }
-
-      const html = await deps.fetchText(source.listUrl)
+      const html = await deps.fetchText(group.source.listUrl)
       if (html === null) {
-        errors.push({
-          employer: employer.name,
-          error: `ReachMee list URL returned 404: ${source.listUrl} (the seed ats_ref may be stale, or the customer requires a validator)`,
-        })
+        for (const employer of group.employers) {
+          errors.push({
+            employer: employer.name,
+            error: `ReachMee list URL returned 404: ${group.source.listUrl} (the seed ats_ref may be stale, or the customer requires a validator)`,
+          })
+        }
         return
       }
 
+      const primary = group.employers[0]
       const parsedRows: ParsedResult[] =
-        source.kind === "attract"
-          ? parseAttractList(html, employer.name, source.base)
-          : parseExtList(html, employer.name, source.base)
+        group.source.kind === "attract"
+          ? parseAttractList(html, primary.name, group.source.base)
+          : parseExtList(html, primary.name, group.source.base)
 
       for (const parsed of parsedRows) {
         if (opts.query && !matchesQuery(opts.query, [parsed.queryText])) continue
         if (opts.jobage !== undefined && !(parsed.result.date && isWithinDays(parsed.result.date, opts.jobage))) continue
         if (opts.location) {
           if (!parsed.locationText) {
-            unknownLocation.push({ employer, parsed })
+            slot.unknown.push(parsed)
             continue
           }
           if (!locationMatches(parsed.locationText, opts.location, deps.area)) continue
         }
-        pooled.push(parsed.result)
+        slot.known.push(parsed)
       }
     } catch (e) {
-      errors.push({ employer: employer.name, error: e instanceof Error ? e.message : String(e) })
+      const message = e instanceof Error ? e.message : String(e)
+      for (const employer of group.employers) {
+        errors.push({ employer: employer.name, error: message })
+      }
     }
   })
+
+  const pooled: JobResult[] = []
+  // ReachMee list pages often omit location (Asplan's "Sted" column is blank;
+  // Sweco's Attract table has no location column at all). When a location
+  // filter is requested, defer those rows and read their detail page instead
+  // of dropping them as non-matches.
+  const unknownLocation: Array<{ employer: Employer; parsed: ParsedResult }> = []
+  for (let i = 0; i < groups.length; i++) {
+    const primary = groups[i].employers[0]
+    for (const parsed of groupRows[i].known) pooled.push(parsed.result)
+    for (const parsed of groupRows[i].unknown) unknownLocation.push({ employer: primary, parsed })
+  }
 
   if (opts.location && unknownLocation.length > 0) {
     const cap = opts.locationDetailLimit ?? 200
@@ -117,29 +214,48 @@ export async function collectResults(
         `${unknownLocation.length - cap} listing(s) with no location were not checked because --location-detail-limit=${cap}; raise it to include them.`,
       )
     }
-    await mapLimit(unknownLocation.slice(0, cap), MAX_CONCURRENCY, async ({ employer, parsed }) => {
-      try {
-        const target = normalizeDetailTarget(parsed.result.url)
-        if (!target) return
-        const html = await deps.fetchText(target.url)
-        if (!html) return
-        const detail =
-          target.kind === "attract"
-            ? parseAttractDetail(html, target, employer.name)
-            : parseExtDetail(html, target, employer.name)
-        if (detail.location && locationMatches(detail.location, opts.location, deps.area)) {
-          parsed.result.location = detail.location
-          pooled.push(parsed.result)
+
+    const detailItems = unknownLocation.slice(0, cap)
+    const detailResults: Array<JobResult | null> = detailItems.map(() => null)
+    await mapLimit(
+      detailItems.map((item, index) => ({ item, index })),
+      MAX_CONCURRENCY,
+      async ({ item, index }) => {
+        try {
+          const target = normalizeDetailTarget(item.parsed.result.url)
+          if (!target) return
+          const html = await deps.fetchText(target.url)
+          if (!html) return
+          const detail =
+            target.kind === "attract"
+              ? parseAttractDetail(html, target, item.employer.name)
+              : parseExtDetail(html, target, item.employer.name)
+          if (detail.location && locationMatches(detail.location, opts.location, deps.area)) {
+            item.parsed.result.location = detail.location
+            detailResults[index] = item.parsed.result
+          }
+        } catch {
+          // A detail fetch failure just leaves the row out of the location-filtered
+          // pool; it is not an employer-level list failure.
         }
-      } catch {
-        // A detail fetch failure just leaves the row out of the location-filtered
-        // pool; it is not an employer-level list failure.
-      }
-    })
+      },
+    )
+    for (const result of detailResults) {
+      if (result) pooled.push(result)
+    }
+  }
+
+  const results: JobResult[] = []
+  const seen = new Set<string>()
+  for (const result of pooled) {
+    const key = canonicalResultKey(result)
+    if (seen.has(key)) continue
+    seen.add(key)
+    results.push(result)
   }
 
   errors.sort((a, b) => a.employer.localeCompare(b.employer))
-  return { results: sortResults(pooled), errors, warnings }
+  return { results: sortResults(results), errors, warnings }
 }
 
 function displayId(id: string): string {

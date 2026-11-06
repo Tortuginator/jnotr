@@ -216,6 +216,35 @@ async function fetchAllForTenant(tenant: string, fetcher: SearchDeps["fetchText"
   return adverts.slice(0, MAX_PER_EMPLOYER)
 }
 
+/**
+ * Canonical identity of a posting, used to drop the same advert when several
+ * registry rows resolve to one Webcruiter tenant. Prefer the tenant/advert id
+ * encoded in the posting URL, then fall back to the normalised URL or id.
+ */
+export function canonicalResultKey(result: JobResult): string {
+  const url = (result.url ?? "").trim()
+  if (url) {
+    try {
+      const parsed = new URL(/^https?:\/\//i.test(url) ? url : `https://${url}`)
+      const host = parsed.hostname.toLowerCase()
+      const tenant = host.match(/^(\d+)\.webcruiter\.no$/)
+      const advert = parsed.pathname.match(/\/Main\/Recruit\/Public\/([^/?#]+)/i)
+      if (tenant && advert) return `webcruiter:${tenant[1]}:${advert[1].toLowerCase()}`
+      const path = parsed.pathname.replace(/\/+$/, "")
+      return `url:${host}${path}${parsed.search}`
+    } catch {
+      // Not a URL; fall through to the id.
+    }
+  }
+  const id = (result.id ?? "").trim()
+  return id ? `id:${id.toLowerCase()}` : `url:${url.toLowerCase()}`
+}
+
+interface TenantGroup {
+  tenant: string
+  employers: Employer[]
+}
+
 export async function collectResults(
   opts: SearchOpts,
   deps: SearchDeps = defaultDeps(),
@@ -225,32 +254,65 @@ export async function collectResults(
   }
 
   const errors: MetaError[] = []
-  const pooled: JobResult[] = []
+  // Webcruiter tenants can back several legal entities (e.g. TENSIO TS AS and
+  // TENSIO AS share companylock 62532). Group registry rows by tenant so each
+  // tenant is fetched once and its adverts are attributed to the first enabled
+  // registry row (the primary employer) in registry order.
+  const groups: TenantGroup[] = []
+  const byTenant = new Map<string, TenantGroup>()
 
-  await mapLimit(deps.employers, MAX_CONCURRENCY, async (employer) => {
+  for (const employer of deps.employers) {
+    const tenant = resolveTenant(employer.atsRef)
+    if (!tenant) {
+      errors.push({
+        employer: employer.name,
+        error: "no Webcruiter tenant/company-lock in ats_ref (expected companylock=<id> or https://<id>.webcruiter.no)",
+      })
+      continue
+    }
+
+    let group = byTenant.get(tenant)
+    if (!group) {
+      group = { tenant, employers: [] }
+      byTenant.set(tenant, group)
+      groups.push(group)
+    }
+    group.employers.push(employer)
+  }
+
+  const groupResults: JobResult[][] = groups.map(() => [])
+
+  await mapLimit(groups, MAX_CONCURRENCY, async (group) => {
+    const slot = groupResults[groups.indexOf(group)]
+    const primary = group.employers[0]
     try {
-      const tenant = resolveTenant(employer.atsRef)
-      if (!tenant) {
-        errors.push({
-          employer: employer.name,
-          error: "no Webcruiter tenant/company-lock in ats_ref (expected companylock=<id> or https://<id>.webcruiter.no)",
-        })
-        return
-      }
-
-      const adverts = await fetchAllForTenant(tenant, deps.fetchText)
+      const adverts = await fetchAllForTenant(group.tenant, deps.fetchText)
       for (const advert of adverts) {
-        const parsed = parseWebcruiterItem(advert, tenant, employer.name)
+        const parsed = parseWebcruiterItem(advert, group.tenant, primary.name)
         if (!parsed) continue
         if (opts.query && !matchesQuery(opts.query, [parsed.queryText])) continue
         if (opts.location && !locationMatches(parsed.locationText, opts.location, deps.area)) continue
         if (opts.jobage !== undefined && !(parsed.result.date && isWithinDays(parsed.result.date, opts.jobage))) continue
-        pooled.push(parsed.result)
+        slot.push(parsed.result)
       }
     } catch (e) {
-      errors.push({ employer: employer.name, error: e instanceof Error ? e.message : String(e) })
+      const message = e instanceof Error ? e.message : String(e)
+      for (const employer of group.employers) {
+        errors.push({ employer: employer.name, error: message })
+      }
     }
   })
+
+  const pooled: JobResult[] = []
+  const seen = new Set<string>()
+  for (const slot of groupResults) {
+    for (const result of slot) {
+      const key = canonicalResultKey(result)
+      if (seen.has(key)) continue
+      seen.add(key)
+      pooled.push(result)
+    }
+  }
 
   errors.sort((a, b) => a.employer.localeCompare(b.employer))
   return { results: sortResults(pooled), errors }

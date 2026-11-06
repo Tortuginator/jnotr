@@ -1,8 +1,11 @@
 # SAP SuccessFactors assessment — Trondheim round 2
 
-Research date: 6 Nov 2026. Scope: the seven new SuccessFactors rows in
-`trondheim-patches/employers.seed.set2.csv` plus the seven existing
-SuccessFactors rows in `job_scraper/employers.csv`. No registry or code changes.
+Research date: 6 Nov 2026. Scope: the nine SuccessFactors-labelled rows in
+`trondheim-patches/employers.seed.set2.csv` (eight true SF rows after
+Fiskeridirektoratet is reclassified to ContactRH) plus the seven existing
+SuccessFactors rows in `job_scraper/employers.csv`. The committed registry
+therefore has 15 rows with `ats=successfactors` across 14 distinct career sites.
+No registry or code changes.
 
 Method: `python3 tools/fetch_page.py` (robots-enforced, browser-header retry,
 no WAF bypass), the public NAV Arbeidsplassen search API
@@ -30,9 +33,13 @@ Arbeidsplassen search HTML/API was used instead.
 | AVARN SECURITY AS | SuccessFactors CSB (`career2.successfactors.eu`) | `https://jobs.avarnsecurity.com/search/` (HTML only) | robots allows `/search/`; disallows `/services/`; WAF 403 | NAV 22 ads, 2 in area (Trondheim legevakt; Stjørdal airport); Jobbnorge 0 | RELY ON NAV |
 | GJENSIDIGE FORSIKRING ASA | SuccessFactors CSB (`career5.successfactors.eu`) | `https://jobs.gjensidige.com/search/` (HTML only) | robots allows `/search/`; disallows `/services/`; WAF 403 | NAV 14 ads, 1 in area (Trondheim); Jobbnorge 0 | RELY ON NAV |
 
-Counts: 14 rows, 13 distinct career sites (the two Felleskjøpet entities share
-`FKA`). Recommendations: RELY ON NAV/JOBNORGE 13/14; BLOCKED 1/14 (Lerøy);
-BUILD 0/14.
+Counts: the committed registry has 15 SuccessFactors-labelled rows across 14
+distinct career sites (the two Felleskjøpet entities share `FKA`). This
+assessment deep-checked 14 rows; Vestas and EY were not deep-assessed, and
+Fiskeridirektoratet is the one mislabel now on ContactRH. Recommendations for
+the 14 assessed rows: RELY ON NAV/JOBNORGE 13/14; BLOCKED 1/14 (Lerøy);
+BUILD 0/14. Across the assessed rows, 13 of the 14 are covered by
+NAV/Jobbnorge; Lerøy is blocked.
 
 ## What the SuccessFactors sites expose
 
@@ -112,14 +119,17 @@ connector cannot rely on the endpoint without circumventing it.
 
 ## Recommendation
 
-**Do not build `successfactors-search` in this round.** The connector would
-cover 13/14 rows on paper, but:
+**Do not build `successfactors-search` in this round.** The assessment does not
+show that a connector is needed: 13 of the 14 assessed rows are covered by
+NAV/Jobbnorge; Vestas and EY were not deep-assessed; Lerøy is blocked. In
+addition:
 
 - the only robots-permitted read path is HTML `/search/`;
 - the JSON/RSS path under `/services/` is disallowed;
 - 10 of 12 reachable job-list endpoints returned a WAF 403, and bypassing it is
   out of scope;
-- NAV already carries 13/14 rows, and Jobbnorge adds nothing today;
+- 13 of the 14 assessed rows are covered by NAV/Jobbnorge, and Jobbnorge adds
+  nothing today;
 - the one confirmed SF-only Trondheim job (Lerøy) is on a blocked host.
 
 If the WAF policy changes or a permitted feed appears, these are the base URLs

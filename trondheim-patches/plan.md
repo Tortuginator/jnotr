@@ -400,10 +400,10 @@ Round 2 extends the registry and `/scrape` toward ecology, bioeconomy and sustai
 
 ### WP12 SuccessFactors assessment
 
-- Assessed the 14 SuccessFactors rows (13 distinct career sites). NAV or Jobbnorge already carries 13/14, so no `successfactors-search` connector was built.
+- The committed registry has 15 SuccessFactors-labelled rows across 14 distinct career sites (Felleskjøpet Agri and Forutvikling share FKA). The assessment deep-checked 14 rows; Vestas and EY were not deep-assessed. NAV/Jobbnorge cover 13 of the 14 assessed rows, so no `successfactors-search` connector is needed.
 - Lerøy Seafood Group is the exception: its career site is WAF-blocked and its SF-only Trondheim job does not appear on NAV or Jobbnorge.
 - Fiskeridirektoratet was a mislabel: its applications go to ContactRH, not SuccessFactors, and the registry now says `contactrh`.
-- The SuccessFactors rows remain `no_connector` and are covered through NAV/Jobbnorge.
+- The SuccessFactors-labelled rows remain `no_connector` (ERNST & YOUNG AS included); the assessed rows are covered through NAV/Jobbnorge.
 
 ### WP13 search terms
 

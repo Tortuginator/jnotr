@@ -4,6 +4,7 @@ import { join } from "node:path"
 import {
   combineLocation,
   fetchPublicDetail,
+  htmlToTextDecoded,
   listXmlUrl,
   locationMatches,
   normalizeDate,
@@ -11,6 +12,7 @@ import {
   normalizeText,
   parseRss,
   parseVacancyList,
+  parseVacancyXml,
   rssDescriptionsByTitle,
   rssUrl,
   textMatchesQuery,
@@ -94,6 +96,33 @@ describe("EasyCruit feed parsing", () => {
     // This is the quirk the CLI works around: one link for every item.
     expect(links.size).toBe(1)
   })
+
+  test("XML title and location are decoded exactly once", () => {
+    const xml =
+      '<Vacancy id="1"><Versions><Version language="nb">' +
+      '<Title>&amp;lt;script&amp;gt;SECRET&amp;lt;/script&amp;gt;</Title>' +
+      '<Location>&amp;lt;template&amp;gt;SECRET&amp;lt;/template&amp;gt;</Location>' +
+      "</Version></Versions></Vacancy>"
+    const [vacancy] = parseVacancyList(xml)
+
+    expect(vacancy.title).toBe("&lt;script&gt;SECRET&lt;/script&gt;")
+    expect(vacancy.location).toBe("&lt;template&gt;SECRET&lt;/template&gt;")
+    expect(vacancy.title).not.toContain("<script>")
+    expect(vacancy.location).not.toContain("<template>")
+  })
+
+  test("XML description entities are decoded exactly once before htmlToText", () => {
+    const xml =
+      '<Vacancy id="1"><Versions><Version language="nb">' +
+      "<Description>&lt;p&gt;A &amp;lt;script&amp;gt;SECRET&amp;lt;/script&amp;gt;&lt;/p&gt;</Description>" +
+      "</Version></Versions></Vacancy>"
+    const detail = parseVacancyXml(xml)
+
+    expect(detail?.descriptionHtml).toBe("<p>A &lt;script&gt;SECRET&lt;/script&gt;</p>")
+    expect(htmlToTextDecoded(detail?.descriptionHtml)).toBe(
+      "A &lt;script&gt;SECRET&lt;/script&gt;",
+    )
+  })
 })
 
 describe("matching", () => {
@@ -152,6 +181,21 @@ describe("matching", () => {
     const location = combineLocation("Oslo", "Stjørdal", "STJØRDAL KOMMUNE")
     expect(location).toBe("Oslo")
     expect(locationMatches(location, "area", area)).toBe(false)
+  })
+
+  test("multi-word out-of-area workplaces keep their own place name", () => {
+    for (const workplace of ["Oslo sentrum", "Bergen sentrum", "Voss sjukehus"]) {
+      const location = combineLocation(workplace, "Stjørdal", "STJØRDAL KOMMUNE")
+      expect(location).toBe(workplace)
+      expect(locationMatches(location, "area", area)).toBe(false)
+    }
+  })
+
+  test("departmental workplaces still get the municipality hint", () => {
+    expect(combineLocation("Sektor helse", "Stjørdal", "STJØRDAL KOMMUNE")).toBe(
+      "Sektor helse, Stjørdal",
+    )
+    expect(locationMatches("Sektor helse, Stjørdal", "area", area)).toBe(true)
   })
 
   test("dates accept the XML and Norwegian deadline forms", () => {

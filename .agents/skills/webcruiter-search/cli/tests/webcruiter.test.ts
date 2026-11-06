@@ -189,6 +189,93 @@ describe("collectResults", () => {
   })
 })
 
+describe("shared Webcruiter tenants", () => {
+  const responseFor = (tenant: string, ids: string[]) =>
+    JSON.stringify({
+      Total: ids.length,
+      Data: ids.map((id) => ({
+        Id: id,
+        Heading: `Job ${id}`,
+        CompanyName: "Advert fallback",
+        PublishedDate: "2026-10-27",
+        Workplace: "Trondheim",
+      })),
+    })
+
+  const employer = (name: string, atsRef: string): Employer => ({
+    ...baseEmployer,
+    name,
+    atsRef,
+  })
+
+  test("fetches a shared tenant once and attributes every advert to the first registry row", async () => {
+    const calls: string[] = []
+    const employers = [
+      employer("TENSIO TS AS", "companylock=62532"),
+      employer("TENSIO AS", "companylock=62532"),
+      employer("TENSIO HOLDING AS", "https://62532.webcruiter.no"),
+    ]
+    const { results, errors } = await collectResults(
+      { page: 1, format: "json" },
+      {
+        area: loadArea(),
+        employers,
+        fetchText: async (url) => {
+          calls.push(url)
+          return responseFor("62532", ["100", "200"])
+        },
+      },
+    )
+
+    expect(calls).toHaveLength(1)
+    expect(errors).toHaveLength(0)
+    expect(results).toHaveLength(2)
+    expect(results.map((result) => result.url)).toEqual([
+      "https://62532.webcruiter.no/Main/Recruit/Public/100",
+      "https://62532.webcruiter.no/Main/Recruit/Public/200",
+    ])
+    expect(results.every((result) => result.company === "TENSIO TS AS")).toBe(true)
+  })
+
+  test("de-duplicates a repeated advert URL within a tenant", async () => {
+    const { results } = await collectResults(
+      { page: 1, format: "json" },
+      {
+        area: loadArea(),
+        employers: [employer("TENSIO TS AS", "companylock=62532")],
+        fetchText: async () => responseFor("62532", ["100", "100"]),
+      },
+    )
+    expect(results).toHaveLength(1)
+  })
+
+  test("still pools genuinely distinct tenants separately", async () => {
+    const calls: string[] = []
+    const employers = [
+      employer("TENANT A", "companylock=7254"),
+      employer("TENANT B", "companylock=9999"),
+    ]
+    const { results, errors } = await collectResults(
+      { page: 1, format: "json" },
+      {
+        area: loadArea(),
+        employers,
+        fetchText: async (url) => {
+          calls.push(url)
+          if (url.includes("/7254?")) return responseFor("7254", ["1"])
+          if (url.includes("/9999?")) return responseFor("9999", ["2"])
+          throw new Error(`unexpected fetch ${url}`)
+        },
+      },
+    )
+
+    expect(calls).toHaveLength(2)
+    expect(errors).toHaveLength(0)
+    expect(results).toHaveLength(2)
+    expect(results.map((result) => result.company).sort()).toEqual(["TENANT A", "TENANT B"])
+  })
+})
+
 describe("detail", () => {
   const target = normalizeTarget("7254:5198357738")!
 

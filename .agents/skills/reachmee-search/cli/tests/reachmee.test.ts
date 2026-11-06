@@ -291,6 +291,76 @@ describe("ReachMee collectResults", () => {
   })
 })
 
+describe("shared ReachMee customers", () => {
+  const extListHtml = (code: string, customer: string, jobId: string, title: string) =>
+    `<table><thead><tr><th>Stilling</th><th>Sted</th><th>Søknadsfrist</th></tr></thead><tbody><tr>
+      <td><a href='https://web103.reachmee.com/ext/${code}/${customer}/job?site=6&lang=NO&validator=x&job_id=${jobId}'>${title}</a></td>
+      <td>Oslo</td><td>10.11.2026</td></tr></tbody></table>`
+
+  test("fetches a customer once even when its registry rows use different list URLs", async () => {
+    const first: Employer = {
+      ...asplan,
+      name: "SCALE AQUACULTURE AS",
+      atsRef: "https://web103.reachmee.com/ext/I010/2617/main?site=18&lang=NO&validator=aaa",
+    }
+    const second: Employer = {
+      ...first,
+      name: "SCALE AQUACULTURE GROUP AS",
+      atsRef: "https://web103.reachmee.com/ext/I010/2617/main?site=6&lang=NO&validator=bbb",
+    }
+    const calls: string[] = []
+    const { results, errors } = await collectResults(
+      { page: 1, format: "json" },
+      {
+        area: loadArea(),
+        employers: [first, second],
+        fetchText: async (url) => {
+          calls.push(url)
+          return extListHtml("I010", "2617", "57", "Thesis")
+        },
+      },
+    )
+
+    expect(calls).toEqual([parseSourceRef(first.atsRef)!.listUrl])
+    expect(errors).toHaveLength(0)
+    expect(results).toHaveLength(1)
+    expect(results[0].company).toBe("SCALE AQUACULTURE AS")
+  })
+
+  test("still pools genuinely different customers separately", async () => {
+    const a: Employer = {
+      ...asplan,
+      name: "CUSTOMER A",
+      atsRef: "https://web103.reachmee.com/ext/I010/2617/main?site=6&lang=NO&validator=a",
+    }
+    const b: Employer = {
+      ...asplan,
+      name: "CUSTOMER B",
+      atsRef: "https://web103.reachmee.com/ext/I010/2618/main?site=6&lang=NO&validator=b",
+    }
+    const calls: string[] = []
+    const { results, errors } = await collectResults(
+      { page: 1, format: "json" },
+      {
+        area: loadArea(),
+        employers: [a, b],
+        fetchText: async (url) => {
+          calls.push(url)
+          if (url.includes("/2617/main?")) return extListHtml("I010", "2617", "1", "Customer A job")
+          if (url.includes("/2618/main?")) return extListHtml("I010", "2618", "2", "Customer B job")
+          return null
+        },
+      },
+    )
+
+    expect(calls).toHaveLength(2)
+    expect(errors).toHaveLength(0)
+    expect(results).toHaveLength(2)
+    expect(results.map((result) => result.company).sort()).toEqual(["CUSTOMER A", "CUSTOMER B"])
+    expect(new Set(results.map((result) => result.url)).size).toBe(2)
+  })
+})
+
 describe("ReachMee detail", () => {
   const extUrl =
     "https://web103.reachmee.com/ext/I010/2581/job?site=6&lang=NO&validator=bb6acbf35f424f0ddb47918d102863c3&job_id=215"

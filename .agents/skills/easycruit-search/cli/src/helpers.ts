@@ -305,8 +305,7 @@ export function cleanInline(html: string | null | undefined): string | null {
   return text || null
 }
 
-/** HTML → readable text, preserving paragraph and line breaks. */
-export function htmlToText(html: string | null | undefined): string | null {
+function htmlToTextInternal(html: string | null | undefined, decodeEntities: boolean): string | null {
   if (!html) return null
   const withBreaks = visibleHtml(html)
     .replace(/\r\n?/g, "\n")
@@ -315,11 +314,29 @@ export function htmlToText(html: string | null | undefined): string | null {
     .replace(/<\/(p|li|ul|ol|div|h[1-6]|tr|table|section|article|blockquote)>/gi, "\n")
   const text = withBreaks
     .split("\n")
-    .map((line) => decodeHtmlEntities(line.replace(/<[^>]+>/g, " ")).replace(/[ \t]+/g, " ").trim())
+    .map((line) => {
+      const stripped = line.replace(/<[^>]+>/g, " ")
+      const decoded = decodeEntities ? decodeHtmlEntities(stripped) : stripped
+      return decoded.replace(/[ \t]+/g, " ").trim()
+    })
     .join("\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim()
   return text || null
+}
+
+/** HTML → readable text, preserving paragraph and line breaks. */
+export function htmlToText(html: string | null | undefined): string | null {
+  return htmlToTextInternal(html, true)
+}
+
+/**
+ * HTML that was already entity-decoded once from XML → readable text. Entities
+ * are not decoded a second time, so `&amp;lt;` (decoded to `&lt;`) stays escaped
+ * instead of turning into a literal tag.
+ */
+export function htmlToTextDecoded(html: string | null | undefined): string | null {
+  return htmlToTextInternal(html, false)
 }
 
 /** Extract the inner HTML of the first element whose class contains `className`. */
@@ -664,6 +681,38 @@ export function employerLocationHint(employerName: string, area: AreaFile | null
   return null
 }
 
+// Major Norwegian cities outside the Trondheim commute area. A workplace that
+// names one of these is already an explicit place, even when it is a multi-word
+// phrase such as "Bergen sentrum" or "Voss sjukehus"; appending a municipality
+// hint would wrongly pull the posting into the area filter. Trondheim and the
+// area's other municipalities deliberately do not appear here.
+const OUT_OF_AREA_CITIES = [
+  "Oslo",
+  "Bergen",
+  "Stavanger",
+  "Sandnes",
+  "Tromsø",
+  "Bodø",
+  "Ålesund",
+  "Molde",
+  "Kristiansund",
+  "Kristiansand",
+  "Drammen",
+  "Fredrikstad",
+  "Sarpsborg",
+  "Skien",
+  "Porsgrunn",
+  "Tønsberg",
+  "Moss",
+  "Hamar",
+  "Gjøvik",
+  "Lillehammer",
+  "Voss",
+  "Haugesund",
+  "Førde",
+  "Levanger",
+]
+
 /**
  * Join a specific workplace with its municipality only when the employer is
  * named after that municipality and the workplace is a departmental string
@@ -682,6 +731,9 @@ export function combineLocation(
   if (!p) return h
   if (!h || phraseMatches(p, h)) return p
   if (!employerName || !phraseMatches(employerName, h)) return p
+  // Whole-token matching keeps "Voss sjukehus" and "Bergen sentrum" from being
+  // rewritten, without treating a substring such as "Mosse" as Moss.
+  if (OUT_OF_AREA_CITIES.some((city) => phraseMatches(p, city))) return p
   // A single-token workplace is already an explicit place name (Oslo, Bergen);
   // do not rewrite it. Departmental workplaces are multi-word and still get
   // the municipality appended for the area filter.
@@ -759,6 +811,12 @@ export function canonicalVacancyUrl(slug: string, id: string): string {
 // ---------------------------------------------------------------------------
 // RSS and XML parsing
 
+/**
+ * Inner text of a tag, with CDATA unwrapped. Entities stay encoded so each
+ * caller decodes exactly once: `cleanInline` decodes inline fields, while
+ * description HTML is decoded before `htmlToTextDecoded`. Decoding here as well
+ * would turn `<Title>&amp;lt;script&amp;gt;</Title>` into a literal tag.
+ */
 function xmlText(chunk: string, tag: string): string | null {
   const escaped = tag.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
   const match = chunk.match(new RegExp(`<${escaped}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/${escaped}\\s*>`, "i"))
@@ -766,8 +824,12 @@ function xmlText(chunk: string, tag: string): string | null {
   let value = match[1].trim()
   const cdata = value.match(/^<!\[CDATA\[([\s\S]*?)\]\]>$/)
   if (cdata) value = cdata[1]
-  value = decodeHtmlEntities(value).trim()
+  value = value.trim()
   return value || null
+}
+
+function decodeXmlText(value: string | null): string | null {
+  return value ? decodeHtmlEntities(value) : null
 }
 
 export interface RssItem {
@@ -785,9 +847,9 @@ export function parseRss(xml: string): RssItem[] {
   for (const match of xml.matchAll(/<item\b[^>]*>([\s\S]*?)<\/item>/gi)) {
     const chunk = match[1]
     items.push({
-      title: xmlText(chunk, "title"),
-      link: xmlText(chunk, "link"),
-      description: xmlText(chunk, "description"),
+      title: decodeXmlText(xmlText(chunk, "title")),
+      link: decodeXmlText(xmlText(chunk, "link")),
+      description: decodeXmlText(xmlText(chunk, "description")),
     })
   }
   return items
@@ -800,7 +862,7 @@ export function rssDescriptionsByTitle(items: RssItem[]): Map<string, string> {
     if (!item.title) continue
     const key = normalizeText(item.title)
     if (!key) continue
-    const description = htmlToText(item.description)
+    const description = htmlToTextDecoded(item.description)
     if (!map.has(key) && description) map.set(key, description)
   }
   return map
@@ -865,7 +927,7 @@ export function parseVacancyList(xml: string): ListVacancy[] {
     const attrs = match[1]
     const inner = match[2]
     const version = firstVersion(inner)
-    const id = attr(attrs, "id") ?? xmlText(inner, "id")
+    const id = attr(attrs, "id") ?? decodeXmlText(xmlText(inner, "id"))
     if (!id) continue
     vacancies.push({
       id,
@@ -929,7 +991,7 @@ export function parseVacancyXml(xml: string): XmlVacancyDetail | null {
     applicationUrl: cleanInline(xmlText(inner, "ApplicationURL")),
     region: parseRegion(version),
     categories: parseCategories(version),
-    descriptionHtml: xmlText(version, "Description"),
+    descriptionHtml: decodeXmlText(xmlText(version, "Description")),
   }
 }
 
